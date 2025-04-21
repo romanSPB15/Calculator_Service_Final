@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/romanSPB15/Calculator_Service/pckg/dir"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
 )
 
 var client http.Client

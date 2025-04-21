@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/romanSPB15/Calculator_Service/pckg/rpn"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
 )
 
 // Время запроса агента

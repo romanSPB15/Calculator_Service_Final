@@ -1,7 +1,7 @@
 package main
 
 import (
-	app "github.com/romanSPB15/Calculator_Service/internal/application"
+	app "github.com/romanSPB15/Calculator_Service_Final/internal/application"
 )
 
 func main() {

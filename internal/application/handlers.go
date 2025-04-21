@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/romanSPB15/Calculator_Service/pckg/rpn"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
 )
 
 // Добавление выражения через http://localhost:8080/api/v1/calculate POST.

@@ -8,8 +8,8 @@ import (
 
 	"net/http/httptest"
 
-	app "github.com/romanSPB15/Calculator_Service/internal/application"
-	"github.com/romanSPB15/Calculator_Service/pckg/rpn"
+	app "github.com/romanSPB15/Calculator_Service_Final/internal/application"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
 )
 
 var testApp = app.New()

@@ -1,0 +1,31 @@
+syntax = "proto3"; // версия proto файлов
+package geometry; // название пакета
+option go_package = "github.com/romanSPB15/Calculator_Service_Final/proto";
+
+message CalculateRequest {
+    string expression = 1; // числа здесь - порядок полей в сообщении
+}
+
+message CalculateResponse {
+    int32 id = 1; 
+}
+
+message GetExpressionRequest {
+    int32 id = 1;
+}
+
+message Expression {
+    int32 id = 1;
+    string status = 2;
+    float result = 3;
+}
+
+message GetExpressionResponse {
+    Expression expression = 1;
+}
+
+service CalculatorService {
+	// методы, которые можно будет реализовать и использовать 
+    rpc Calculate (CalculateRequest) returns (CalculateResponse); 
+    rpc GetExpression (GetExpressionRequest) returns (GetExpressionResponse);
+}

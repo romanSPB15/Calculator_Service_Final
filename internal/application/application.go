@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/romanSPB15/Calculator_Service/internal/web"
-	"github.com/romanSPB15/Calculator_Service/pckg/dir"
-	"github.com/romanSPB15/Calculator_Service/pckg/rpn"
+	"github.com/romanSPB15/Calculator_Service_Final/internal/web"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -64,6 +65,14 @@ var Expressions = make(map[IDExpression]*Expression)
 // Задачи
 var Tasks = rpn.NewConcurrentTaskMap()
 
+type Server struct {
+	pb.GeometryServiceServer // сервис из сгенерированного пакета
+}
+
+func NewServer() *Server {
+	return &Server{}
+}
+
 // Приложение
 type Application struct {
 	// Агент
@@ -104,8 +113,8 @@ func (app *Application) RunServer() {
 			"Orkestrator",
 		}
 	}()
-	// Создаём новый mux.Router
 	/* Инициализация обработчиков роутера */
+	server := grpc.NewServer()
 	app.Router.HandleFunc("/api/v1/calculate", app.AddExpressionHandler)
 	app.Router.HandleFunc("/api/v1/expressions/{id}", app.GetExpressionHandler)
 	app.Router.HandleFunc("/api/v1/expressions", app.GetExpressionsHandler)
@@ -132,11 +141,11 @@ func (app *Application) RunServer() {
 			os.Exit(0)
 		case "help":
 			fmt.Print("\r\n")
-			fmt.Println("Calculator_Service - это сервис для вычисления арифметических выражений.")
+			fmt.Println("Calculator_Service_Final - это сервис для вычисления арифметических выражений.")
 			fmt.Println("\tКоманды")
 			fmt.Println("help - помощь")
 			fmt.Println("exit - выход из приложения")
-			fmt.Println("Более подробную информацию можно на найти в README репозитория: https://github.com/romanSPB15/Calculator_Service")
+			fmt.Println("Более подробную информацию можно на найти в README репозитория: https://github.com/romanSPB15/Calculator_Service_Final")
 			fmt.Println("\t\tRomanSPB15")
 		}
 	}

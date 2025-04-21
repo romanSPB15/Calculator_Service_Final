@@ -1,0 +1,3 @@
+syntax = "proto3"; // версия proto файлов
+package geometry; // название пакета
+option go_package = "github.com/romanSPB15/Calculator_Service_Final/proto";

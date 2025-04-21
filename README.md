@@ -3,7 +3,7 @@
 ## Описание
 
 Программа представляет собой API-сервис для конкурентного вычисления выражений с веб интерфейсом.
- - [***Github***](https://github.com/romanSPB15/Calculator_Service)
+ - [***Github***](https://github.com/romanSPB15/Calculator_Service_Final)
   - **Внимание**: это ***beta-версия*** программы, и он может работать ***некорректно***:
 
 ## Предназначение
@@ -24,9 +24,9 @@ cd <your_dir>
 ```
  - Потом необходимо выполнить эту команду:
 ```bash
-git clone https://github.com/romanSPB15/Calculator_Service
+git clone https://github.com/romanSPB15/Calculator_Service_Final
 ```
- - В выбранной папке появится папка ```Calculator_Service``` c проектом.
+ - В выбранной папке появится папка ```Calculator_Service_Final``` c проектом.
 
 ## Работа с API
 
@@ -57,7 +57,7 @@ git clone https://github.com/romanSPB15/Calculator_Service
 ### Запуск
  - Для запуска API необходимо выбрать директорию проекта:
 ```
-cd <путь к папке Calculator_Service>
+cd <путь к папке Calculator_Service_Final>
 ```
  - Далее надо запустить файл ```cmd/main.go```:
 ```
