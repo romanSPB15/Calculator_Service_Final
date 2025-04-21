@@ -6,5 +6,5 @@ import (
 
 func main() {
 	a := app.New()
-	a.RunServer() // Запускаем приложение
+	a.Run() // Запускаем приложение
 }

@@ -2,7 +2,7 @@
 
 ## Описание
 
-Программа представляет собой API-сервис для конкурентного вычисления выражений с веб интерфейсом.
+Программа представляет собой API-сервис для конкурентного вычисления выражений с GRPC.
  - [***Github***](https://github.com/romanSPB15/Calculator_Service_Final)
   - **Внимание**: это ***beta-версия*** программы, и он может работать ***некорректно***:
 
@@ -126,25 +126,21 @@ curl --location 'localhost/api/v1/expressions'
             "id": 2352351,
             "status": "OK",  // готово
             "result": 3
-            "error": ""
         },
         
             "id": 5372342,
             "status": "Calculation",  // готово
             "result": 3
-            "error": ""
         },
         {
             "id": 8251431,
             "status": "error",  // статус ошибки
             "result": 0
-            "error": "someting error"
         },
         {
             "id": 34942763,
             "status": "Wait", // ждёт выполнения
             "result": 0
-            "error": ""
         }
     ]
 }

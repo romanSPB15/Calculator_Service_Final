@@ -66,8 +66,8 @@ func (cm *ConcurrentTaskMap) Add(id IDTask, t *Task) {
 }
 
 // Получение простого мапа
-func (cm *ConcurrentTaskMap) Map() *map[IDTask]*Task {
-	return &cm.m
+func (cm *ConcurrentTaskMap) Map() map[IDTask]*Task {
+	return cm.m
 }
 
 // Задача с ID

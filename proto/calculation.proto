@@ -1,5 +1,5 @@
 syntax = "proto3"; // версия proto файлов
-package geometry; // название пакета
+package calculation; // название пакета
 option go_package = "github.com/romanSPB15/Calculator_Service_Final/proto";
 
 message CalculateRequest {
@@ -7,25 +7,53 @@ message CalculateRequest {
 }
 
 message CalculateResponse {
-    int32 id = 1; 
+    uint32 id = 1; 
 }
 
 message GetExpressionRequest {
-    int32 id = 1;
+    uint32 id = 1;
 }
 
 message Expression {
-    int32 id = 1;
+    uint32 id = 1;
     string status = 2;
-    float result = 3;
+    double result = 3;
 }
 
 message GetExpressionResponse {
     Expression expression = 1;
 }
 
+message GetExpressionsRequest {}
+
+message GetExpressionsResponse {
+    repeated Expression expressions = 1;
+}
+
+message GetTaskRequest {}
+
+message GetTaskResponse {
+    uint32 id = 1; //идентификатор задачи
+    double arg1 = 2; // имя первого аргумента
+    double arg2 = 3;  // имя второго аргумента
+    string operation = 4; // операция
+    int32 operation_time = 5; //время выполнения операции
+}
+
+message SaveTaskResultRequest {
+   uint32 id = 1; //идентификатор задачи
+   double result = 2; // результат задачи
+}
+
+message SaveTaskResultResponse {}
+
+
+
 service CalculatorService {
 	// методы, которые можно будет реализовать и использовать 
     rpc Calculate (CalculateRequest) returns (CalculateResponse); 
     rpc GetExpression (GetExpressionRequest) returns (GetExpressionResponse);
+    rpc GetExpressions (GetExpressionsRequest) returns (GetExpressionsResponse);
+    rpc GetTask (GetTaskRequest) returns (GetTaskResponse);
+    rpc SaveTaskResult (SaveTaskResultRequest) returns (SaveTaskResultResponse);
 }

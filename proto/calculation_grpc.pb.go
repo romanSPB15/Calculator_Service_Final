@@ -19,8 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CalculatorService_Calculate_FullMethodName     = "/geometry.CalculatorService/Calculate"
-	CalculatorService_GetExpression_FullMethodName = "/geometry.CalculatorService/GetExpression"
+	CalculatorService_Calculate_FullMethodName      = "/calculation.CalculatorService/Calculate"
+	CalculatorService_GetExpression_FullMethodName  = "/calculation.CalculatorService/GetExpression"
+	CalculatorService_GetExpressions_FullMethodName = "/calculation.CalculatorService/GetExpressions"
+	CalculatorService_GetTask_FullMethodName        = "/calculation.CalculatorService/GetTask"
+	CalculatorService_SaveTaskResult_FullMethodName = "/calculation.CalculatorService/SaveTaskResult"
 )
 
 // CalculatorServiceClient is the client API for CalculatorService service.
@@ -30,6 +33,9 @@ type CalculatorServiceClient interface {
 	// методы, которые можно будет реализовать и использовать
 	Calculate(ctx context.Context, in *CalculateRequest, opts ...grpc.CallOption) (*CalculateResponse, error)
 	GetExpression(ctx context.Context, in *GetExpressionRequest, opts ...grpc.CallOption) (*GetExpressionResponse, error)
+	GetExpressions(ctx context.Context, in *GetExpressionsRequest, opts ...grpc.CallOption) (*GetExpressionsResponse, error)
+	GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*GetTaskResponse, error)
+	SaveTaskResult(ctx context.Context, in *SaveTaskResultRequest, opts ...grpc.CallOption) (*SaveTaskResultResponse, error)
 }
 
 type calculatorServiceClient struct {
@@ -60,6 +66,36 @@ func (c *calculatorServiceClient) GetExpression(ctx context.Context, in *GetExpr
 	return out, nil
 }
 
+func (c *calculatorServiceClient) GetExpressions(ctx context.Context, in *GetExpressionsRequest, opts ...grpc.CallOption) (*GetExpressionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetExpressionsResponse)
+	err := c.cc.Invoke(ctx, CalculatorService_GetExpressions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *calculatorServiceClient) GetTask(ctx context.Context, in *GetTaskRequest, opts ...grpc.CallOption) (*GetTaskResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTaskResponse)
+	err := c.cc.Invoke(ctx, CalculatorService_GetTask_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *calculatorServiceClient) SaveTaskResult(ctx context.Context, in *SaveTaskResultRequest, opts ...grpc.CallOption) (*SaveTaskResultResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SaveTaskResultResponse)
+	err := c.cc.Invoke(ctx, CalculatorService_SaveTaskResult_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CalculatorServiceServer is the server API for CalculatorService service.
 // All implementations must embed UnimplementedCalculatorServiceServer
 // for forward compatibility.
@@ -67,6 +103,9 @@ type CalculatorServiceServer interface {
 	// методы, которые можно будет реализовать и использовать
 	Calculate(context.Context, *CalculateRequest) (*CalculateResponse, error)
 	GetExpression(context.Context, *GetExpressionRequest) (*GetExpressionResponse, error)
+	GetExpressions(context.Context, *GetExpressionsRequest) (*GetExpressionsResponse, error)
+	GetTask(context.Context, *GetTaskRequest) (*GetTaskResponse, error)
+	SaveTaskResult(context.Context, *SaveTaskResultRequest) (*SaveTaskResultResponse, error)
 	mustEmbedUnimplementedCalculatorServiceServer()
 }
 
@@ -82,6 +121,15 @@ func (UnimplementedCalculatorServiceServer) Calculate(context.Context, *Calculat
 }
 func (UnimplementedCalculatorServiceServer) GetExpression(context.Context, *GetExpressionRequest) (*GetExpressionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetExpression not implemented")
+}
+func (UnimplementedCalculatorServiceServer) GetExpressions(context.Context, *GetExpressionsRequest) (*GetExpressionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetExpressions not implemented")
+}
+func (UnimplementedCalculatorServiceServer) GetTask(context.Context, *GetTaskRequest) (*GetTaskResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTask not implemented")
+}
+func (UnimplementedCalculatorServiceServer) SaveTaskResult(context.Context, *SaveTaskResultRequest) (*SaveTaskResultResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveTaskResult not implemented")
 }
 func (UnimplementedCalculatorServiceServer) mustEmbedUnimplementedCalculatorServiceServer() {}
 func (UnimplementedCalculatorServiceServer) testEmbeddedByValue()                           {}
@@ -140,11 +188,65 @@ func _CalculatorService_GetExpression_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CalculatorService_GetExpressions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetExpressionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CalculatorServiceServer).GetExpressions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CalculatorService_GetExpressions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CalculatorServiceServer).GetExpressions(ctx, req.(*GetExpressionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CalculatorService_GetTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CalculatorServiceServer).GetTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CalculatorService_GetTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CalculatorServiceServer).GetTask(ctx, req.(*GetTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CalculatorService_SaveTaskResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveTaskResultRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CalculatorServiceServer).SaveTaskResult(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CalculatorService_SaveTaskResult_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CalculatorServiceServer).SaveTaskResult(ctx, req.(*SaveTaskResultRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CalculatorService_ServiceDesc is the grpc.ServiceDesc for CalculatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CalculatorService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "geometry.CalculatorService",
+	ServiceName: "calculation.CalculatorService",
 	HandlerType: (*CalculatorServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -154,6 +256,18 @@ var CalculatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetExpression",
 			Handler:    _CalculatorService_GetExpression_Handler,
+		},
+		{
+			MethodName: "GetExpressions",
+			Handler:    _CalculatorService_GetExpressions_Handler,
+		},
+		{
+			MethodName: "GetTask",
+			Handler:    _CalculatorService_GetTask_Handler,
+		},
+		{
+			MethodName: "SaveTaskResult",
+			Handler:    _CalculatorService_SaveTaskResult_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

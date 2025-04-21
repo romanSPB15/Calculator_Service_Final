@@ -3,16 +3,19 @@ package application
 import (
 	"fmt"
 	"log"
-	"net/http"
-	"os"
-	"time"
+	"net"
 
-	"github.com/gorilla/mux"
-	"github.com/romanSPB15/Calculator_Service_Final/internal/web"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
+	pb "github.com/romanSPB15/Calculator_Service_Final/proto"
 	"google.golang.org/grpc"
 )
+
+var current *Application
+
+func Current() *Application {
+	return current
+}
 
 const (
 	WaitStatus        = "Wait"
@@ -59,94 +62,53 @@ type AgentResult struct {
 	Result float64    `json:"result"`
 }
 
-// Выражения
-var Expressions = make(map[IDExpression]*Expression)
-
-// Задачи
-var Tasks = rpn.NewConcurrentTaskMap()
-
-type Server struct {
-	pb.GeometryServiceServer // сервис из сгенерированного пакета
-}
-
-func NewServer() *Server {
-	return &Server{}
-}
-
 // Приложение
 type Application struct {
 	// Агент
 	Config       *config
-	Agent        http.Client
 	NumGoroutine int
-	Router       *mux.Router
+	workerId     int
+	Expressions  map[IDExpression]*Expression
+	Tasks        *rpn.ConcurrentTaskMap
 }
 
 func New() *Application {
-	return &Application{
-		Router: mux.NewRouter(),
-		Config: newConfig(),
+	app := &Application{
+		Config:       newConfig(),
+		NumGoroutine: 0,
+		workerId:     0,
+		Expressions:  make(map[IDExpression]*Expression),
+		Tasks:        rpn.NewConcurrentTaskMap(),
 	}
-}
-
-type runError struct {
-	error
-	object string
+	current = app
+	return app
 }
 
 const IP = "localhost:8080"
 
 // Запуск всей системы
-func (app *Application) RunServer() {
-	rpn.InitEnv(dir.EnvFile()) // Иницилизация переменных из среды
-	/* ListenAndServe() закончится только с ошибкой, как и runAgent() */
-	startServer := make(chan struct{}, 1) // Канал запуска оркестратора
-	err := make(chan runError)            // Канал с ошибкой
-	go func() {
-		if app.Config.Debug {
-			log.Println("Orkestrator Runned")
-		}
-		startServer <- struct{}{}
-		errIntrf := http.ListenAndServe(IP, nil)
-		err <- runError{
-			errIntrf,
-			"Orkestrator",
-		}
-	}()
-	/* Инициализация обработчиков роутера */
-	server := grpc.NewServer()
-	app.Router.HandleFunc("/api/v1/calculate", app.AddExpressionHandler)
-	app.Router.HandleFunc("/api/v1/expressions/{id}", app.GetExpressionHandler)
-	app.Router.HandleFunc("/api/v1/expressions", app.GetExpressionsHandler)
-	app.Router.HandleFunc("/api/v1/internal/task", app.TaskHandler)
-	if app.Config.Web {
-		web.HandleToRouter(app.Router)
+func (app *Application) Run() {
+	host := "localhost"
+	port := "8080"
+
+	addr := fmt.Sprintf("%s:%s", host, port)
+	lis, err := net.Listen("tcp", addr) // будем ждать запросы по этому адресу
+	if err != nil {
+		panic(err)
 	}
-	http.Handle("/", app.Router)
+	rpn.InitEnv(dir.EnvFile()) // Иницилизация переменных из среды
+	grpcServer := grpc.NewServer()
+	calcServer := app.NewServer()
+
+	pb.RegisterCalculatorServiceServer(grpcServer, calcServer)
 
 	go func() {
-		<-startServer // Ждём, когда запустится оркестратор
-		errIntrf := app.runAgent()
-		err <- runError{
-			errIntrf,
-			"Agent",
-		}
+		log.Fatal("falied to run agent ", app.runAgent())
 	}()
-	time.Sleep(100 * time.Millisecond)
-	for {
-		var cmd string
-		fmt.Scan(&cmd)
-		switch cmd {
-		case "exit":
-			os.Exit(0)
-		case "help":
-			fmt.Print("\r\n")
-			fmt.Println("Calculator_Service_Final - это сервис для вычисления арифметических выражений.")
-			fmt.Println("\tКоманды")
-			fmt.Println("help - помощь")
-			fmt.Println("exit - выход из приложения")
-			fmt.Println("Более подробную информацию можно на найти в README репозитория: https://github.com/romanSPB15/Calculator_Service_Final")
-			fmt.Println("\t\tRomanSPB15")
-		}
+	if app.Config.Debug {
+		log.Println("main server runned")
+	}
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatal("failed to serving grpc: ", err)
 	}
 }
