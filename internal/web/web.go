@@ -1,10 +1,12 @@
 package web
 
+/*
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -117,11 +119,14 @@ func showExpression(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HandleToRouter(router *mux.Router) {
+func Run() {
+	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/web", index)
 	router.HandleFunc("/api/v1/web/calculate", calculate)
 	router.HandleFunc("/api/v1/web/expressions", expressions)
 	router.HandleFunc("/api/v1/web/showid", showID)
 	router.HandleFunc("/api/v1/web/expression", expression)
 	router.HandleFunc("/api/v1/web/showexpr", showExpression)
-}
+	http.Handle("/", router)
+	log.Fatalf("falied to listening port 8181: %v", http.ListenAndServe(":8181", nil))
+}*/

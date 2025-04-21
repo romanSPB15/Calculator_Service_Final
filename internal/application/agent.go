@@ -51,13 +51,9 @@ func (a *Application) worker(resp *pb.GetTaskResponse, client pb.CalculatorServi
 
 // Запуск агента
 func (a *Application) runAgent() error {
-	res := make(chan error)
-	host := "localhost"
-	port := "8080"
-
 	time.Sleep(time.Millisecond * 100)
-
-	addr := fmt.Sprintf("%s:%s", host, port) // используем адрес сервера
+	res := make(chan error)
+	addr := fmt.Sprintf("%s:%d", rpn.HOST, rpn.PORT) // используем адрес сервера
 	// установим соединение
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 

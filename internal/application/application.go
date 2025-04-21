@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	//"github.com/romanSPB15/Calculator_Service_Final/internal/web"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
 	pb "github.com/romanSPB15/Calculator_Service_Final/proto"
@@ -78,17 +79,13 @@ func New() *Application {
 		grpcServer:   grpc.NewServer(),
 	}
 	app.calcServer = app.NewServer()
+	rpn.InitEnv(dir.EnvFile())
 	return app
 }
 
-const IP = "localhost:8080"
-
 // Запуск всей системы
-func (app *Application) Start() {
-	host := "localhost"
-	port := "8080"
-
-	addr := fmt.Sprintf("%s:%s", host, port)
+func (app *Application) Run() {
+	addr := fmt.Sprintf("%s:%d", rpn.HOST, rpn.PORT)
 	lis, err := net.Listen("tcp", addr) // будем ждать запросы по этому адресу
 	if err != nil {
 		panic(err)
@@ -104,11 +101,15 @@ func (app *Application) Start() {
 		log.Println("main server runned")
 	}
 
+	log.Println("App runned")
+	/*if app.Config.Web {
+		go web.Run()
+	}*/
 	if err := app.grpcServer.Serve(lis); err != nil {
 		log.Fatal("failed to serving grpc: ", err)
 	}
 }
 
 func (app *Application) Stop() {
-	app.grpcServer.Stop()
+	app.grpcServer.GracefulStop()
 }

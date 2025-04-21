@@ -14,19 +14,29 @@ var (
 	TIME_MULTIPLICATIONS_MS int
 	TIME_DIVISIONS_MS       int
 	COMPUTING_POWER         int
+	PORT                    int
+	HOST                    string
 )
 
 // Считывание переменной среды в виде числа
 func getIntEnv(key string) int {
 	str, has := os.LookupEnv(key)
 	if !has {
-		log.Panicf("System has not %s", key)
+		log.Panicf("System env`s has not %s", key)
 	}
 	res, err := strconv.Atoi(str)
 	if err != nil {
-		log.Panicf("Env %s is not int", key)
+		log.Panicf("Invalid %s", key)
 	}
 	return res
+}
+
+func getStringEnv(key string) string {
+	str, has := os.LookupEnv(key)
+	if !has {
+		log.Panicf("System has not %s", key)
+	}
+	return str
 }
 
 // Иницилизация переменных Go из файла .env
@@ -40,4 +50,6 @@ func InitEnv(file ...string) {
 	TIME_MULTIPLICATIONS_MS = getIntEnv("TIME_MULTIPLICATIONS_MS")
 	TIME_DIVISIONS_MS = getIntEnv("TIME_DIVISIONS_MS")
 	COMPUTING_POWER = getIntEnv("COMPUTING_POWER")
+	PORT = getIntEnv("PORT")
+	HOST = getStringEnv("HOST")
 }
