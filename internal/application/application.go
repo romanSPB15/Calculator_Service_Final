@@ -11,12 +11,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-var current *Application
-
-func Current() *Application {
-	return current
-}
-
 const (
 	WaitStatus        = "Wait"
 	OKStatus          = "OK"
@@ -68,6 +62,8 @@ type Application struct {
 	Config       *config
 	NumGoroutine int
 	workerId     int
+	grpcServer   *grpc.Server
+	calcServer   pb.CalculatorServiceServer
 	Expressions  map[IDExpression]*Expression
 	Tasks        *rpn.ConcurrentTaskMap
 }
@@ -79,15 +75,16 @@ func New() *Application {
 		workerId:     0,
 		Expressions:  make(map[IDExpression]*Expression),
 		Tasks:        rpn.NewConcurrentTaskMap(),
+		grpcServer:   grpc.NewServer(),
 	}
-	current = app
+	app.calcServer = app.NewServer()
 	return app
 }
 
 const IP = "localhost:8080"
 
 // Запуск всей системы
-func (app *Application) Run() {
+func (app *Application) Start() {
 	host := "localhost"
 	port := "8080"
 
@@ -97,10 +94,8 @@ func (app *Application) Run() {
 		panic(err)
 	}
 	rpn.InitEnv(dir.EnvFile()) // Иницилизация переменных из среды
-	grpcServer := grpc.NewServer()
-	calcServer := app.NewServer()
 
-	pb.RegisterCalculatorServiceServer(grpcServer, calcServer)
+	pb.RegisterCalculatorServiceServer(app.grpcServer, app.calcServer)
 
 	go func() {
 		log.Fatal("falied to run agent ", app.runAgent())
@@ -108,7 +103,12 @@ func (app *Application) Run() {
 	if app.Config.Debug {
 		log.Println("main server runned")
 	}
-	if err := grpcServer.Serve(lis); err != nil {
+
+	if err := app.grpcServer.Serve(lis); err != nil {
 		log.Fatal("failed to serving grpc: ", err)
 	}
+}
+
+func (app *Application) Stop() {
+	app.grpcServer.Stop()
 }
