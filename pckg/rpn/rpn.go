@@ -2,6 +2,7 @@ package rpn
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -196,7 +197,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool) (res Expressi
 				if err != nil {
 					return 0, err
 				}
-				calcstr := strconv.FormatFloat(calc, 'f', 0, 64)
+				calcstr := fmt.Sprint(calc)
 				expression = strings.Replace(expression, expression[imin:imax], calcstr, 1) // Меняем скобки на результат выражения в них
 				i -= len(exp) - 1
 			}
