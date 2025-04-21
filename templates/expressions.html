@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Показ выражений</title>
+    </head>
+    <body>
+        <h2>Показ выражений</h2>
+        <table>
+            <thead><th>ID</th><th>Data</th><th>Status</th><th>Result</th></thead>
+            {{range . }}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>{{.Data}}</td>
+                <td>{{.Status}}</td>
+                <td>{{.Result}}</td>
+            </tr>
+            {{end}}
+            <p><a href="/api/v1/web">Главная</a></p>
+    </body>
+</html>
