@@ -32,19 +32,19 @@ func (app *Application) NewServer() *Server {
 	return &Server{app: app}
 }
 
-const hmacSampleSecret = "romanSPB15"
-
+// Все запросы с токеном
 type RequestWithToken interface {
 	GetToken() string
 }
 
+// Получить, есть ли такой пользователь
 func (s *Server) GetUserByToken(rwt RequestWithToken) (*User, error) {
 	token, err := jwt.Parse(rwt.GetToken(), func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("invalid token")
 		}
 
-		return []byte(hmacSampleSecret), nil
+		return []byte(SECRETKEY), nil
 	})
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid token")
@@ -58,6 +58,7 @@ func (s *Server) GetUserByToken(rwt RequestWithToken) (*User, error) {
 	return u, nil
 }
 
+// Вычисление выражения
 func (s *Server) Calculate(ctx context.Context, req *pb.CalculateRequest) (*pb.CalculateResponse, error) {
 	u, err := s.GetUserByToken(req)
 	if err != nil {
@@ -79,6 +80,7 @@ func (s *Server) Calculate(ctx context.Context, req *pb.CalculateRequest) (*pb.C
 	return &pb.CalculateResponse{Id: id}, nil
 }
 
+// Получение выражения пользователя по его ID
 func (s *Server) GetExpression(ctx context.Context, req *pb.GetExpressionRequest) (*pb.GetExpressionResponse, error) {
 	u, err := s.GetUserByToken(req)
 	if err != nil {
@@ -97,6 +99,7 @@ func (s *Server) GetExpression(ctx context.Context, req *pb.GetExpressionRequest
 	}, nil
 }
 
+// Получение всех выражений пользователя
 func (s *Server) GetExpressions(ctx context.Context, req *pb.GetExpressionsRequest) (*pb.GetExpressionsResponse, error) {
 	u, err := s.GetUserByToken(req)
 	if err != nil {
@@ -115,8 +118,8 @@ func (s *Server) GetExpressions(ctx context.Context, req *pb.GetExpressionsReque
 	}, nil
 }
 
+// Получение задачи на выполнение
 func (s *Server) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.GetTaskResponse, error) {
-
 	var id rpn.IDTask = 1<<32 - 1
 	for k, v := range s.app.Tasks.Map() {
 		if v.Status != "OK" {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -25,6 +26,12 @@ type AuthRequest struct {
 	Login    string `json:"login"`
 }
 
+func init() {
+	SECRETKEY, _ = os.LookupEnv("SECRETKEY")
+}
+
+var SECRETKEY = "romanSPB15" // по умолчанию
+
 func MakeToken(login, password string) string {
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -35,7 +42,7 @@ func MakeToken(login, password string) string {
 		"iat":      now.Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte(hmacSampleSecret))
+	tokenString, err := token.SignedString([]byte(SECRETKEY))
 	if err != nil {
 		panic(err)
 	}

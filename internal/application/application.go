@@ -65,10 +65,9 @@ type Application struct {
 	grpcServer   *grpc.Server
 	calcServer   pb.CalculatorServiceServer
 	Users        []*User
-	//Expressions  map[IDExpression]*Expression
-	Tasks      *rpn.ConcurrentTaskMap
-	authServer *AuthServer
-	logger     *log.Logger
+	Tasks        *rpn.ConcurrentTaskMap
+	authServer   *AuthServer
+	logger       *log.Logger
 }
 
 func New() *Application {
@@ -76,10 +75,9 @@ func New() *Application {
 		Config:       newConfig(),
 		NumGoroutine: 0,
 		workerId:     0,
-		//Expressions:  make(map[IDExpression]*Expression),
-		Tasks:      rpn.NewConcurrentTaskMap(),
-		grpcServer: grpc.NewServer(),
-		logger:     log.New(os.Stdout, "app: ", log.Ltime),
+		Tasks:        rpn.NewConcurrentTaskMap(),
+		grpcServer:   grpc.NewServer(),
+		logger:       log.New(os.Stdout, "app: ", log.Ltime),
 	}
 	app.calcServer = app.NewServer()
 	app.authServer = NewAuthServer(app)

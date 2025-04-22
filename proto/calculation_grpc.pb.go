@@ -30,7 +30,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CalculatorServiceClient interface {
-	// методы, которые можно будет реализовать и использовать
 	Calculate(ctx context.Context, in *CalculateRequest, opts ...grpc.CallOption) (*CalculateResponse, error)
 	GetExpression(ctx context.Context, in *GetExpressionRequest, opts ...grpc.CallOption) (*GetExpressionResponse, error)
 	GetExpressions(ctx context.Context, in *GetExpressionsRequest, opts ...grpc.CallOption) (*GetExpressionsResponse, error)
@@ -100,7 +99,6 @@ func (c *calculatorServiceClient) SaveTaskResult(ctx context.Context, in *SaveTa
 // All implementations must embed UnimplementedCalculatorServiceServer
 // for forward compatibility.
 type CalculatorServiceServer interface {
-	// методы, которые можно будет реализовать и использовать
 	Calculate(context.Context, *CalculateRequest) (*CalculateResponse, error)
 	GetExpression(context.Context, *GetExpressionRequest) (*GetExpressionResponse, error)
 	GetExpressions(context.Context, *GetExpressionsRequest) (*GetExpressionsResponse, error)
