@@ -42,7 +42,7 @@ func main() {
 	}
 	host, has := os.LookupEnv("HOST")
 	if !has {
-		logger.Fatal("falied to open USERNAME")
+		logger.Fatal("falied to open HOST")
 	}
 	port, has := os.LookupEnv("PORT")
 	if !has {
