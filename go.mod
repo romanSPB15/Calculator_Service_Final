@@ -10,8 +10,6 @@ require (
 	google.golang.org/protobuf v1.36.5
 )
 
-require github.com/brianvoe/gofakeit v3.18.0+incompatible // indirect
-
 require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	golang.org/x/net v0.35.0 // indirect
