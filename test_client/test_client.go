@@ -49,10 +49,13 @@ func main() {
 	defer conn.Close()
 
 	c := pb.NewCalculatorServiceClient(conn)
+	fmt.Println("Registering...")
 	_, err = http.DefaultClient.Post("http://localhost:8181/api/v1/register", "application/json", strings.NewReader("{\"login\": \"roman\", \"password\": \"asdfgh\"}"))
 	if err != nil {
 		logger.Println("falied to register: ", err)
 	}
+	fmt.Println("Complete")
+	fmt.Println("Loginning...")
 	resp, err := http.DefaultClient.Post("http://localhost:8181/api/v1/login", "application/json", strings.NewReader("{\"login\": \"roman\", \"password\": \"asdfgh\"}"))
 	if err != nil {
 		logger.Fatal("falied to login: ", err)
@@ -62,7 +65,10 @@ func main() {
 		logger.Fatal("falied to read token: ", err)
 	}
 	token := string(b)
+
+	fmt.Println("Complete")
 	expr := ""
+
 	for {
 		fmt.Scan(&expr)
 		time.Sleep(time.Second)
