@@ -84,7 +84,7 @@ func NewAuthServer(app *Application) *AuthServer {
 		}
 		_, ok := app.GetUser(req.Login, req.Password)
 		if !ok {
-			http.Error(w, "user not exists", http.StatusUnprocessableEntity)
+			http.Error(w, "invalid login or password", http.StatusUnprocessableEntity)
 			return
 		}
 		fmt.Fprint(w, MakeToken(req.Login, req.Password))
