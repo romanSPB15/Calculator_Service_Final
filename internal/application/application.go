@@ -139,5 +139,6 @@ func (app *Application) Run() {
 
 func (app *Application) Stop() {
 	app.grpcServer.GracefulStop()
+	app.authServer.Close()
 	app.logger.Println("Gracefully stopped")
 }

@@ -58,6 +58,10 @@ func NewAuthServer(app *Application) *AuthServer {
 			http.Error(w, "invalid body", http.StatusUnprocessableEntity)
 			return
 		}
+		if len(req.Password) < 5 {
+			http.Error(w, "short password", http.StatusUnprocessableEntity)
+			return
+		}
 		_, ok := app.GetUser(req.Login, req.Password)
 		if ok {
 			http.Error(w, "user already exists", http.StatusUnprocessableEntity)

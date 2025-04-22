@@ -18,7 +18,7 @@ func configFiles() string {
 
 // config/config.json
 func JsonFile() string {
-	res := configFiles() + `config.json`
+	res := configFiles() + `.json`
 	return res
 }
 
