@@ -69,6 +69,8 @@ func main() {
 	fmt.Println("Complete")
 	expr := ""
 
+	fmt.Println("--------------Calculator----------------")
+
 	for {
 		fmt.Scan(&expr)
 		time.Sleep(time.Second)
