@@ -52,7 +52,7 @@ func (app *Application) worker(resp *pb.GetTaskResponse, client pb.CalculatorSer
 func (app *Application) runAgent() error {
 	time.Sleep(time.Millisecond * 100)
 	res := make(chan error)
-	addr := fmt.Sprintf("%s:%d", rpn.HOST, rpn.PORT) // используем адрес сервера
+	addr := fmt.Sprintf("%s:%d", rpn.HOST, GRPC_PORT) // используем адрес сервера
 	// установим соединение
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 

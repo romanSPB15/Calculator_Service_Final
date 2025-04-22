@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 
 	//"github.com/romanSPB15/Calculator_Service_Final/internal/web"
+	"github.com/gorilla/mux"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
 	pb "github.com/romanSPB15/Calculator_Service_Final/proto"
@@ -66,7 +68,6 @@ type Application struct {
 	calcServer   pb.CalculatorServiceServer
 	Users        []*User
 	Tasks        *rpn.ConcurrentTaskMap
-	authServer   *AuthServer
 	logger       *log.Logger
 }
 
@@ -80,7 +81,6 @@ func New() *Application {
 		logger:       log.New(os.Stdout, "app: ", log.Ltime),
 	}
 	app.calcServer = app.NewServer()
-	app.authServer = NewAuthServer(app)
 	rpn.InitEnv(dir.EnvFile())
 	return app
 }
@@ -105,10 +105,13 @@ func (a *Application) AddUser(login, password string) {
 	a.Users = append(a.Users, u)
 }
 
+const GRPC_PORT = 8081
+
 // Запуск всей системы
 func (app *Application) Run() {
 	addr := fmt.Sprintf("%s:%d", rpn.HOST, rpn.PORT)
-	lis, err := net.Listen("tcp", addr) // будем ждать запросы по этому адресу
+	addrGRPC := fmt.Sprintf("%s:%d", rpn.HOST, GRPC_PORT)
+	lis, err := net.Listen("tcp", addrGRPC) // будем ждать запросы по этому адресу
 	if err != nil {
 		panic(err)
 	}
@@ -119,16 +122,21 @@ func (app *Application) Run() {
 	go func() {
 		app.logger.Fatal("falied to run agent ", app.runAgent())
 	}()
-	if app.Config.Debug {
-		app.logger.Println("main server runned")
-	}
+
+	router := mux.NewRouter()
+	// Создаём новый mux.Router
+	/* Инициализация обработчиков роутера */
+	router.HandleFunc("/api/v1/register", app.RegisterHandler)
+	router.HandleFunc("/api/v1/login", app.LoginHandler)
+	router.HandleFunc("/api/v1/calculate", app.AddExpressionHandler)
+	router.HandleFunc("/api/v1/expressions/{id}", app.GetExpressionHandler)
+	router.HandleFunc("/api/v1/expressions", app.GetExpressionsHandler)
+	http.Handle("/", router)
 
 	app.logger.Println("App runned")
-	/*if app.Config.Web {
-		go web.Run()
-	}*/
+
 	go func() {
-		app.logger.Fatal("auth: failed to serving: ", app.authServer.ListenAndServe())
+		app.logger.Fatal("main: failed to serving: ", http.ListenAndServe(addr, nil))
 	}()
 	if err := app.grpcServer.Serve(lis); err != nil {
 		app.logger.Fatal("failed to serving grpc: ", err)
@@ -137,6 +145,5 @@ func (app *Application) Run() {
 
 func (app *Application) Stop() {
 	app.grpcServer.GracefulStop()
-	app.authServer.Close()
 	app.logger.Println("Gracefully stopped")
 }

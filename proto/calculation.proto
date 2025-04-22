@@ -2,38 +2,6 @@ syntax = "proto3"; // версия proto файлов
 package calculation; // название пакета
 option go_package = "github.com/romanSPB15/Calculator_Service_Final/proto";
 
-message CalculateRequest {
-    string expression = 1; // Выражение
-    string token = 2; // JWT-токен
-}
-
-message CalculateResponse {
-    uint32 id = 1;  // ID-выражения
-}
-
-message GetExpressionRequest {
-    uint32 id = 1;  // ID-выражения
-    string token = 2; // JWT-токен
-}
-
-message Expression { // Пользовательский тип выражения
-    uint32 id = 1; // ID-выражения
-    string status = 2; // Статус
-    double result = 3; // Результат(если статус равен OK)
-}
-
-message GetExpressionResponse {
-    Expression expression = 1; // 1 выражение
-}
-
-message GetExpressionsRequest {
-    string token = 1; // JWT-токен
-}
-
-message GetExpressionsResponse {
-    repeated Expression expressions = 1; // Несколько выражений
-}
-
 message GetTaskRequest {}
 
 message GetTaskResponse {
@@ -52,11 +20,7 @@ message SaveTaskResultRequest {
 message SaveTaskResultResponse {}
 
 
-
 service CalculatorService {
-    rpc Calculate (CalculateRequest) returns (CalculateResponse); 
-    rpc GetExpression (GetExpressionRequest) returns (GetExpressionResponse);
-    rpc GetExpressions (GetExpressionsRequest) returns (GetExpressionsResponse);
     rpc GetTask (GetTaskRequest) returns (GetTaskResponse);
     rpc SaveTaskResult (SaveTaskResultRequest) returns (SaveTaskResultResponse);
 }
