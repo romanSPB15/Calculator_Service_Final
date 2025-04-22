@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,5 +20,4 @@ func main() {
 	// Ждём данных из канала
 	<-stop
 	a.Stop()
-	log.Println("Gracefully stopped")
 }

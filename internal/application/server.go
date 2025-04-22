@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
 	pb "github.com/romanSPB15/Calculator_Service_Final/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 /*
@@ -29,19 +32,47 @@ func (app *Application) NewServer() *Server {
 	return &Server{app: app}
 }
 
+const hmacSampleSecret = "romanSPB15"
+
+type RequestWithToken interface {
+	GetToken() string
+}
+
+func (s *Server) GetUserByToken(rwt RequestWithToken) (*User, error) {
+	token, err := jwt.Parse(rwt.GetToken(), func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("invalid token")
+		}
+
+		return []byte(hmacSampleSecret), nil
+	})
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid token")
+	}
+	login := token.Claims.(jwt.MapClaims)["login"]
+	password := token.Claims.(jwt.MapClaims)["password"]
+	u, ok := s.app.GetUser(login.(string), password.(string))
+	if !ok {
+		return nil, status.Error(codes.InvalidArgument, "user not found")
+	}
+	return u, nil
+}
+
 func (s *Server) Calculate(ctx context.Context, req *pb.CalculateRequest) (*pb.CalculateResponse, error) {
+	u, err := s.GetUserByToken(req)
+	if err != nil {
+		return nil, err
+	}
 	id := uuid.New().ID()
-	e := Expression{req.Expression, WaitStatus, "", 0}
-	s.app.Expressions[id] = &e
+	e := Expression{req.Expression, WaitStatus, 0}
+	u.Expressions[id] = &e
 	go func() {
 		e.Status = CalculationStatus
-		res, err := rpn.Calc(req.Expression, s.app.Tasks, s.app.Config.Debug)
+		res, err := rpn.Calc(req.Expression, s.app.Tasks, s.app.Config.Debug, s.app.logger)
 		if err != nil {
-			e.Error = err.Error()
 			e.Status = ErrorStatus
 		} else {
 			e.Status = "OK"
-			e.Error = ""
 			e.Result = res
 		}
 	}()
@@ -49,7 +80,11 @@ func (s *Server) Calculate(ctx context.Context, req *pb.CalculateRequest) (*pb.C
 }
 
 func (s *Server) GetExpression(ctx context.Context, req *pb.GetExpressionRequest) (*pb.GetExpressionResponse, error) {
-	exp, has := s.app.Expressions[req.Id]
+	u, err := s.GetUserByToken(req)
+	if err != nil {
+		return nil, err
+	}
+	exp, has := u.Expressions[req.Id]
 	if !has {
 		return &pb.GetExpressionResponse{Expression: &pb.Expression{Id: 1<<32 - 1}}, nil
 	}
@@ -63,8 +98,12 @@ func (s *Server) GetExpression(ctx context.Context, req *pb.GetExpressionRequest
 }
 
 func (s *Server) GetExpressions(ctx context.Context, req *pb.GetExpressionsRequest) (*pb.GetExpressionsResponse, error) {
+	u, err := s.GetUserByToken(req)
+	if err != nil {
+		return nil, err
+	}
 	var res []*pb.Expression
-	for id, v := range s.app.Expressions {
+	for id, v := range u.Expressions {
 		res = append(res, &pb.Expression{
 			Id:     id,
 			Status: v.Status,
@@ -77,6 +116,7 @@ func (s *Server) GetExpressions(ctx context.Context, req *pb.GetExpressionsReque
 }
 
 func (s *Server) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.GetTaskResponse, error) {
+
 	var id rpn.IDTask = 1<<32 - 1
 	for k, v := range s.app.Tasks.Map() {
 		if v.Status != "OK" {

@@ -77,9 +77,9 @@ type TaskID struct {
 	Task
 }
 
-func (t *TaskID) Run(debug bool) (res float64) {
+func (t *TaskID) Run(debug bool, logger *log.Logger) (res float64) {
 	if debug {
-		log.Printf("Task %d Runned\r\n", t.ID)
+		logger.Printf("Task %d Runned\r\n", t.ID)
 	}
 	s := time.Now()
 	switch t.Operation {
@@ -96,7 +96,7 @@ func (t *TaskID) Run(debug bool) (res float64) {
 	d = (time.Millisecond * time.Duration(t.OperationTime)) - d
 	time.Sleep(d)
 	if debug {
-		log.Printf("Task %d Completed With Result %.2F\r\n", t.ID, res)
+		logger.Printf("Task %d Completed With Result %.2F\r\n", t.ID, res)
 	}
 	return
 }
@@ -118,7 +118,7 @@ type IDTask = uint32
 var Errorexp = errors.New("expression is not valid")
 var Errordel = errors.New("division by zero")
 
-func Calc(expression string, tasks *ConcurrentTaskMap, debug bool) (res ExpressionResultType, err0 error) {
+func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.Logger) (res ExpressionResultType, err0 error) {
 	if len(expression) < 3 {
 		return 0, Errorexp
 	}
@@ -145,7 +145,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool) (res Expressi
 				scc--
 				if scc == 0 {
 					exp := expression[isc+1 : i]
-					calc, err := Calc(exp, tasks, debug)
+					calc, err := Calc(exp, tasks, debug, logger)
 					if err != nil {
 						return 0, err
 					}
@@ -193,7 +193,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool) (res Expressi
 					imax++
 				}
 				exp := expression[imin:imax]
-				calc, err := Calc(exp, tasks, debug)
+				calc, err := Calc(exp, tasks, debug, logger)
 				if err != nil {
 					return 0, err
 				}
@@ -228,14 +228,14 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool) (res Expressi
 						Done:          make(chan struct{}),
 					}
 					if debug {
-						log.Println("rpn.Calc: Create New Task With ID", id)
+						logger.Println("rpn.Calc: Create New Task With ID", id)
 					}
 
 					tasks.Add(id, &t) // Записываем задачу
 					<-t.Done
 					res = t.Result
 					if debug {
-						log.Printf("Result Task %d(%.2F) is handle in Calc", id, t.Result)
+						logger.Printf("Result Task %d(%.2F) is handle in Calc", id, t.Result)
 					}
 				case '-':
 					uuid := uuid.New()
@@ -249,14 +249,14 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool) (res Expressi
 						Done:          make(chan struct{}),
 					}
 					if debug {
-						log.Println("rpn.Calc: Create New Task With ID", id)
+						logger.Println("rpn.Calc: Create New Task With ID", id)
 					}
 
 					tasks.Add(id, &t) // Записываем задачу
 					<-t.Done
 					res = t.Result
 					if debug {
-						log.Printf("Result Task %d(%.2F) is handle in Calc", id, t.Result)
+						logger.Printf("Result Task %d(%.2F) is handle in Calc", id, t.Result)
 					}
 				case '*':
 					uuid := uuid.New()
@@ -270,14 +270,14 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool) (res Expressi
 						Done:          make(chan struct{}),
 					}
 					if debug {
-						log.Println("rpn.Calc: Create New Task With ID", id)
+						logger.Println("rpn.Calc: Create New Task With ID", id)
 					}
 
 					tasks.Add(id, &t) // Записываем задачу
 					<-t.Done
 					res = t.Result
 					if debug {
-						log.Printf("Result Task %d(%.2F) is handle in Calc", id, t.Result)
+						logger.Printf("Result Task %d(%.2F) is handle in Calc", id, t.Result)
 					}
 				case '/':
 					uuid := uuid.New()
@@ -295,14 +295,14 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool) (res Expressi
 						Done:          make(chan struct{}),
 					}
 					if debug {
-						log.Println("rpn.Calc: Create New Task With ID", id)
+						logger.Println("rpn.Calc: Create New Task With ID", id)
 					}
 
 					tasks.Add(id, &t) // Записываем задачу
 					<-t.Done
 					res = t.Result
 					if debug {
-						log.Printf("Result Task %d(%.2F) is handle in Calc", id, t.Result)
+						logger.Printf("Result Task %d(%.2F) is handle in Calc", id, t.Result)
 					}
 				}
 			} else {

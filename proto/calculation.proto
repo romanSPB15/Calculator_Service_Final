@@ -3,7 +3,8 @@ package calculation; // название пакета
 option go_package = "github.com/romanSPB15/Calculator_Service_Final/proto";
 
 message CalculateRequest {
-    string expression = 1; // числа здесь - порядок полей в сообщении
+    string expression = 1;
+    string token = 2;
 }
 
 message CalculateResponse {
@@ -12,6 +13,7 @@ message CalculateResponse {
 
 message GetExpressionRequest {
     uint32 id = 1;
+    string token = 2;
 }
 
 message Expression {
@@ -22,9 +24,12 @@ message Expression {
 
 message GetExpressionResponse {
     Expression expression = 1;
+    string token = 2;
 }
 
-message GetExpressionsRequest {}
+message GetExpressionsRequest {
+    string token = 1;
+}
 
 message GetExpressionsResponse {
     repeated Expression expressions = 1;

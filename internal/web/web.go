@@ -128,5 +128,5 @@ func Run() {
 	router.HandleFunc("/api/v1/web/expression", expression)
 	router.HandleFunc("/api/v1/web/showexpr", showExpression)
 	http.Handle("/", router)
-	log.Fatalf("falied to listening port 8181: %v", http.ListenAndServe(":8181", nil))
+	app.loggerFatalf("falied to listening port 8181: %v", http.ListenAndServe(":8181", nil))
 }*/

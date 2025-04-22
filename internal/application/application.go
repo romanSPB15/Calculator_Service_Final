@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 
 	//"github.com/romanSPB15/Calculator_Service_Final/internal/web"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
@@ -22,7 +23,6 @@ const (
 // Выражение
 type Expression struct {
 	Data   string  `json:"data"`
-	Error  string  `json:"error"`
 	Status string  `json:"status"`
 	Result float64 `json:"result"`
 }
@@ -59,14 +59,16 @@ type AgentResult struct {
 
 // Приложение
 type Application struct {
-	// Агент
 	Config       *config
 	NumGoroutine int
 	workerId     int
 	grpcServer   *grpc.Server
 	calcServer   pb.CalculatorServiceServer
-	Expressions  map[IDExpression]*Expression
-	Tasks        *rpn.ConcurrentTaskMap
+	Users        []*User
+	//Expressions  map[IDExpression]*Expression
+	Tasks      *rpn.ConcurrentTaskMap
+	authServer *AuthServer
+	logger     *log.Logger
 }
 
 func New() *Application {
@@ -74,13 +76,35 @@ func New() *Application {
 		Config:       newConfig(),
 		NumGoroutine: 0,
 		workerId:     0,
-		Expressions:  make(map[IDExpression]*Expression),
-		Tasks:        rpn.NewConcurrentTaskMap(),
-		grpcServer:   grpc.NewServer(),
+		//Expressions:  make(map[IDExpression]*Expression),
+		Tasks:      rpn.NewConcurrentTaskMap(),
+		grpcServer: grpc.NewServer(),
+		logger:     log.New(os.Stdout, "app: ", log.Ltime),
 	}
 	app.calcServer = app.NewServer()
+	app.authServer = NewAuthServer(app)
 	rpn.InitEnv(dir.EnvFile())
 	return app
+}
+
+func (a *Application) GetUser(login, password string) (u *User, ok bool) {
+	for _, v := range a.Users {
+		if v.Password == password && v.Login == login {
+			u = v
+			ok = true
+			return
+		}
+	}
+	return
+}
+
+func (a *Application) AddUser(login, password string) {
+	u := &User{
+		Login:       login,
+		Password:    password,
+		Expressions: make(map[IDExpression]*Expression),
+	}
+	a.Users = append(a.Users, u)
 }
 
 // Запуск всей системы
@@ -95,21 +119,25 @@ func (app *Application) Run() {
 	pb.RegisterCalculatorServiceServer(app.grpcServer, app.calcServer)
 
 	go func() {
-		log.Fatal("falied to run agent ", app.runAgent())
+		app.logger.Fatal("falied to run agent ", app.runAgent())
 	}()
 	if app.Config.Debug {
-		log.Println("main server runned")
+		app.logger.Println("main server runned")
 	}
 
-	log.Println("App runned")
+	app.logger.Println("App runned")
 	/*if app.Config.Web {
 		go web.Run()
 	}*/
+	go func() {
+		app.logger.Fatal("auth: failed to serving: ", app.authServer.ListenAndServe())
+	}()
 	if err := app.grpcServer.Serve(lis); err != nil {
-		log.Fatal("failed to serving grpc: ", err)
+		app.logger.Fatal("failed to serving grpc: ", err)
 	}
 }
 
 func (app *Application) Stop() {
 	app.grpcServer.GracefulStop()
+	app.logger.Println("Gracefully stopped")
 }
