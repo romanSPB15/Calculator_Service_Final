@@ -11,6 +11,11 @@ require (
 )
 
 require (
+	github.com/brianvoe/gofakeit v3.18.0+incompatible // indirect
+	github.com/mattn/go-sqlite3 v1.14.28 // indirect
+)
+
+require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect

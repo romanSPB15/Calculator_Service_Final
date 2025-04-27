@@ -53,7 +53,7 @@ func (a *Application) AddExpressionHandler(w http.ResponseWriter, r *http.Reques
 	}
 	u, str := a.GetUserByRequest(r)
 	if str != "" {
-		http.Error(w, str, 422)
+		http.Error(w, str, http.StatusUnprocessableEntity)
 		return
 	}
 	id := uuid.New().ID()
@@ -100,7 +100,7 @@ func (a *Application) GetExpressionHandler(w http.ResponseWriter, r *http.Reques
 	}
 	u, str := a.GetUserByRequest(r)
 	if str != "" {
-		http.Error(w, str, 422)
+		http.Error(w, str, http.StatusUnprocessableEntity)
 		return
 	}
 	id := IDExpression(i)
@@ -125,7 +125,7 @@ func (a *Application) GetExpressionsHandler(w http.ResponseWriter, r *http.Reque
 	}
 	u, str := a.GetUserByRequest(r)
 	if str != "" {
-		http.Error(w, str, 422)
+		http.Error(w, str, http.StatusUnprocessableEntity)
 		return
 	}
 	var ExpressionsID []ExpressionWithID

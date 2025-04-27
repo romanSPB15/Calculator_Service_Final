@@ -8,6 +8,7 @@ import (
 	"os"
 
 	//"github.com/romanSPB15/Calculator_Service_Final/internal/web"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
@@ -101,6 +102,7 @@ func (a *Application) AddUser(login, password string) {
 		Login:       login,
 		Password:    password,
 		Expressions: make(map[IDExpression]*Expression),
+		ID:          uuid.New().ID(),
 	}
 	a.Users = append(a.Users, u)
 }

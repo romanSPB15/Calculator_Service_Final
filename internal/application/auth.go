@@ -11,6 +11,7 @@ import (
 )
 
 type User struct {
+	ID              uint32
 	Login, Password string
 	Expressions     map[IDExpression]*Expression
 }
@@ -20,7 +21,10 @@ type AuthRequest struct {
 }
 
 func init() {
-	SECRETKEY, _ = os.LookupEnv("SECRETKEY")
+	key, has := os.LookupEnv("SECRETKEY")
+	if has {
+		SECRETKEY = key
+	}
 }
 
 var SECRETKEY = "romanSPB15" // по умолчанию
