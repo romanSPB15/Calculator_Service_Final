@@ -52,7 +52,7 @@ func (app *Application) worker(resp *pb.GetTaskResponse, client pb.CalculatorSer
 func (app *Application) runAgent() error {
 	time.Sleep(time.Millisecond * 100)
 	res := make(chan error)
-	addr := fmt.Sprintf("%s:%d", rpn.HOST, GRPC_PORT) // используем адрес сервера
+	addr := fmt.Sprintf("%s:%d", app.env.HOST, GRPC_PORT) // используем адрес сервера
 	// установим соединение
 	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
@@ -69,22 +69,27 @@ func (app *Application) runAgent() error {
 			app.logger.Println("agent runned")
 		}
 		for {
-			<-time.After(AgentReqestTime)
-			if app.NumGoroutine < rpn.COMPUTING_POWER {
-				resp, err := c.GetTask(context.TODO(), &pb.GetTaskRequest{})
-
-				if err != nil {
-					res <- err
-					return
+			select {
+			case <-time.After(AgentReqestTime):
+				if app.NumGoroutine < app.env.COMPUTING_POWER {
+					resp, err := c.GetTask(context.Background(), &pb.GetTaskRequest{})
+					if err != nil {
+						if err.Error() == TaskNotFound.Error() {
+							continue
+						}
+						res <- err
+						return
+					}
+					if app.Config.Debug {
+						app.logger.Println("agent received task")
+					}
+					go app.worker(resp, c)
 				}
-				if resp.Id == 1<<32-1 {
-					continue
-				}
-				if app.Config.Debug {
-					app.logger.Println("agent received task")
-				}
-				go app.worker(resp, c)
+			case <-app.agentStop:
+				res <- nil
+				return
 			}
+
 		}
 	}()
 	return <-res

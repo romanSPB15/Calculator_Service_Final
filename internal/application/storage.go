@@ -87,8 +87,8 @@ func (st *Storage) InsertExpression(exp *ExpressionWithID, forUser *User) error 
 }
 
 // Получить всех пользователей
-func (st *Storage) SelectAllUsers() ([]User, error) {
-	var users []User
+func (st *Storage) SelectAllUsers() ([]*User, error) {
+	var users []*User
 	var q = `SELECT id, login, password FROM users`
 	rows, err := st.db.Query(q)
 	if err != nil {
@@ -97,7 +97,7 @@ func (st *Storage) SelectAllUsers() ([]User, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		u := User{}
+		u := &User{}
 		err := rows.Scan(&u.ID, &u.Login, &u.Password)
 		if err != nil {
 			return nil, err

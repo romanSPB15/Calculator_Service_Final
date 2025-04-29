@@ -8,7 +8,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
 )
 
@@ -42,7 +41,7 @@ func (a *Application) GetUserByRequest(req *http.Request) (*User, string) {
 func (a *Application) AddExpressionHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	var req map[string]string
@@ -67,7 +66,7 @@ func (a *Application) AddExpressionHandler(w http.ResponseWriter, r *http.Reques
 	u.Expressions[id] = &e
 	go func() {
 		e.Status = CalculationStatus
-		res, err := rpn.Calc(str, a.Tasks, a.Config.Debug, a.logger)
+		res, err := rpn.Calc(str, a.Tasks, a.Config.Debug, a.logger, a.env)
 		if err != nil {
 			e.Status = ErrorStatus
 		} else {
@@ -84,18 +83,18 @@ func (a *Application) AddExpressionHandler(w http.ResponseWriter, r *http.Reques
 	w.Write(data)
 }
 
-// Получение выражения через http://localhost:8080/api/v1/expression/id GET.
+// Получение выражения через http://localhost:8080/api/v1/expression/:id GET.
 func (a *Application) GetExpressionHandler(w http.ResponseWriter, r *http.Request) {
+
 	defer r.Body.Close()
 	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	vars := mux.Vars(r)
-	strid := vars["id"]
+	strid := r.PathValue("id")
 	i, err := strconv.Atoi(strid)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 	u, str := a.GetUserByRequest(r)
@@ -120,7 +119,7 @@ func (a *Application) GetExpressionHandler(w http.ResponseWriter, r *http.Reques
 func (a *Application) GetExpressionsHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	u, str := a.GetUserByRequest(r)

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/env"
 )
 
 type (
@@ -118,7 +119,7 @@ type IDTask = uint32
 var Errorexp = errors.New("expression is not valid")
 var Errordel = errors.New("division by zero")
 
-func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.Logger) (res ExpressionResultType, err0 error) {
+func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.Logger, env *env.List) (res ExpressionResultType, err0 error) {
 	if len(expression) < 3 {
 		return 0, Errorexp
 	}
@@ -145,7 +146,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 				scc--
 				if scc == 0 {
 					exp := expression[isc+1 : i]
-					calc, err := Calc(exp, tasks, debug, logger)
+					calc, err := Calc(exp, tasks, debug, logger, env)
 					if err != nil {
 						return 0, err
 					}
@@ -193,7 +194,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 					imax++
 				}
 				exp := expression[imin:imax]
-				calc, err := Calc(exp, tasks, debug, logger)
+				calc, err := Calc(exp, tasks, debug, logger, env)
 				if err != nil {
 					return 0, err
 				}
@@ -224,7 +225,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 						Arg2:          convertString(b),
 						Operation:     "+",
 						Status:        "Wait",
-						OperationTime: TIME_ADDITION_MS,
+						OperationTime: env.TIME_ADDITION_MS,
 						Done:          make(chan struct{}),
 					}
 					if debug {
@@ -245,7 +246,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 						Arg2:          convertString(b),
 						Operation:     "-",
 						Status:        "Wait",
-						OperationTime: TIME_SUBTRACTION_MS,
+						OperationTime: env.TIME_SUBTRACTION_MS,
 						Done:          make(chan struct{}),
 					}
 					if debug {
@@ -266,7 +267,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 						Arg2:          convertString(b),
 						Operation:     "*",
 						Status:        "Wait",
-						OperationTime: TIME_MULTIPLICATIONS_MS,
+						OperationTime: env.TIME_MULTIPLICATIONS_MS,
 						Done:          make(chan struct{}),
 					}
 					if debug {
@@ -291,7 +292,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 						Arg2:          arg2,
 						Operation:     "/",
 						Status:        "Wait",
-						OperationTime: TIME_DIVISIONS_MS,
+						OperationTime: env.TIME_DIVISIONS_MS,
 						Done:          make(chan struct{}),
 					}
 					if debug {

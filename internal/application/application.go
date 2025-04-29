@@ -9,8 +9,8 @@ import (
 
 	//"github.com/romanSPB15/Calculator_Service_Final/internal/web"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/env"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
 	pb "github.com/romanSPB15/Calculator_Service_Final/proto"
 	"google.golang.org/grpc"
@@ -70,6 +70,11 @@ type Application struct {
 	Users        []*User
 	Tasks        *rpn.ConcurrentTaskMap
 	logger       *log.Logger
+	storage      *Storage
+	server       *http.Server
+	grpcListener net.Listener
+	env          *env.List     // Переменные среды
+	agentStop    chan struct{} // Канал остановки агента
 }
 
 func New() *Application {
@@ -82,8 +87,47 @@ func New() *Application {
 		logger:       log.New(os.Stdout, "app: ", log.Ltime),
 	}
 	app.calcServer = app.NewServer()
-	rpn.InitEnv(dir.EnvFile())
+	app.env = env.NewList()
 	return app
+}
+
+func (a *Application) LoadData() error {
+	usersList, err := a.storage.SelectAllUsers()
+	if err != nil {
+		return err
+	}
+	a.Users = usersList
+	for _, u := range usersList {
+		expressionsList, err := a.storage.SelectExpressionsForUser(u)
+		if err != nil {
+			return err
+		}
+		u.Expressions = make(map[IDExpression]*Expression)
+		for _, v := range expressionsList {
+			u.Expressions[v.ID] = &v.Expression
+		}
+	}
+	return nil
+}
+
+func (a *Application) SaveData() error {
+	err := a.storage.Clear()
+	if err != nil {
+		return err
+	}
+	for _, u := range a.Users {
+		err = a.storage.InsertUser(u)
+		if err != nil {
+			return err
+		}
+		for id, expr := range u.Expressions {
+			err = a.storage.InsertExpression(&ExpressionWithID{Expression: *expr, ID: id}, u)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (a *Application) GetUser(login, password string) (u *User, ok bool) {
@@ -109,43 +153,78 @@ func (a *Application) AddUser(login, password string) {
 
 const GRPC_PORT = 8081
 
-// Запуск всей системы
-func (app *Application) Run() {
-	addr := fmt.Sprintf("%s:%d", rpn.HOST, rpn.PORT)
-	addrGRPC := fmt.Sprintf("%s:%d", rpn.HOST, GRPC_PORT)
-	lis, err := net.Listen("tcp", addrGRPC) // будем ждать запросы по этому адресу
+func (app *Application) Init() error {
+	var err error
+	app.storage, err = OpenStorage(AppStoragePath)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	rpn.InitEnv(dir.EnvFile()) // Иницилизация переменных из среды
 
+	err = app.LoadData()
+	if err != nil {
+		return err
+	}
 	pb.RegisterCalculatorServiceServer(app.grpcServer, app.calcServer)
 
-	go func() {
-		app.logger.Fatal("falied to run agent ", app.runAgent())
-	}()
+	app.env.InitEnv(dir.EnvFile()) // Иницилизация переменных среды
 
-	router := mux.NewRouter()
+	addr := fmt.Sprintf("%s:%d", app.env.HOST, app.env.PORT)
+
+	mux := http.NewServeMux()
 	// Создаём новый mux.Router
 	/* Инициализация обработчиков роутера */
-	router.HandleFunc("/api/v1/register", app.RegisterHandler)
-	router.HandleFunc("/api/v1/login", app.LoginHandler)
-	router.HandleFunc("/api/v1/calculate", app.AddExpressionHandler)
-	router.HandleFunc("/api/v1/expressions/{id}", app.GetExpressionHandler)
-	router.HandleFunc("/api/v1/expressions", app.GetExpressionsHandler)
-	http.Handle("/", router)
+	mux.HandleFunc("/api/v1/register", app.RegisterHandler)
+	mux.HandleFunc("/api/v1/login", app.LoginHandler)
+	mux.HandleFunc("/api/v1/calculate", app.AddExpressionHandler)
+	mux.HandleFunc("/api/v1/expressions/{id}", app.GetExpressionHandler)
+	mux.HandleFunc("/api/v1/expressions", app.GetExpressionsHandler)
+	app.server = &http.Server{Addr: addr, Handler: mux}
 
-	app.logger.Println("App runned")
+	addrGRPC := fmt.Sprintf("%s:%d", app.env.HOST, GRPC_PORT)
+	app.grpcListener, err = net.Listen("tcp", addrGRPC) // будем ждать запросы по этому адресу
+	if err != nil {
+		return err
+	}
+	app.agentStop = make(chan struct{})
+	return nil
+}
+
+// Запуск системы
+func (app *Application) Start() {
+	go func() {
+		app.logger.Println("Agent runned")
+		if err := app.runAgent(); err != nil {
+			app.logger.Fatal("falied to run agent: ", err)
+		}
+	}()
 
 	go func() {
-		app.logger.Fatal("main: failed to serving: ", http.ListenAndServe(addr, nil))
+		app.logger.Println("GRPC runned")
+		if err := app.grpcServer.Serve(app.grpcListener); err != nil {
+			app.logger.Fatal("failed to serving grpc: ", err)
+		}
 	}()
-	if err := app.grpcServer.Serve(lis); err != nil {
-		app.logger.Fatal("failed to serving grpc: ", err)
+
+	app.logger.Println("Main runned")
+	app.logger.Fatal("main: failed to serving: ", app.server.ListenAndServe())
+}
+
+// Запуск системы
+func (app *Application) Run() {
+	err := app.Init()
+	if err != nil {
+		app.logger.Fatal("failed to init application: ", err)
 	}
+	app.Start()
 }
 
 func (app *Application) Stop() {
+	close(app.agentStop)
 	app.grpcServer.GracefulStop()
 	app.logger.Println("Gracefully stopped")
+	defer app.storage.Close()
+	err := app.SaveData()
+	if err != nil {
+		app.logger.Fatal("failed to save data: ", err)
+	}
 }

@@ -94,6 +94,7 @@ func (app *Application) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	app.AddUser(req.Login, req.Password)
 	app.logger.Printf("%s was registered", req.Login)
+	fmt.Fprint(w, MakeToken(req.Login, req.Password))
 }
 
 func (app *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
