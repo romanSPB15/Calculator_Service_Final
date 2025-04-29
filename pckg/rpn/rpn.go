@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/romanSPB15/Calculator_Service_Final/pckg/env"
+	"github.com/romanSPB15/Calculator_Service_Final/internal/env"
 )
 
 type (

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
+	"github.com/romanSPB15/Calculator_Service_Final/internal/dir"
 )
 
 type config struct {

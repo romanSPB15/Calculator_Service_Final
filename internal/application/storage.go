@@ -74,8 +74,8 @@ func (st *Storage) Clear() error {
 
 // Добавить пользователя
 func (st *Storage) InsertUser(user *User) error {
-	var q = `INSERT INTO users (id, login, password) values ($1, $2, $3)`
-	_, err := st.db.Exec(q, user.ID, user.Login, user.Password)
+	var q = `INSERT INTO users (login, password) values ($1, $2)`
+	_, err := st.db.Exec(q, user.Login, user.Password)
 	return err
 }
 

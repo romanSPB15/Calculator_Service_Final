@@ -9,8 +9,9 @@ import (
 
 	//"github.com/romanSPB15/Calculator_Service_Final/internal/web"
 	"github.com/google/uuid"
-	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
-	"github.com/romanSPB15/Calculator_Service_Final/pckg/env"
+	"github.com/romanSPB15/Calculator_Service_Final/internal/dir"
+	"github.com/romanSPB15/Calculator_Service_Final/internal/env"
+	"github.com/romanSPB15/Calculator_Service_Final/internal/hash"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
 	pb "github.com/romanSPB15/Calculator_Service_Final/proto"
 	"google.golang.org/grpc"
@@ -132,7 +133,7 @@ func (a *Application) SaveData() error {
 
 func (a *Application) GetUser(login, password string) (u *User, ok bool) {
 	for _, v := range a.Users {
-		if v.Password == password && v.Login == login {
+		if hash.Compare(v.Password, password) && v.Login == login {
 			u = v
 			ok = true
 			return
@@ -141,14 +142,19 @@ func (a *Application) GetUser(login, password string) (u *User, ok bool) {
 	return
 }
 
-func (a *Application) AddUser(login, password string) {
+func (a *Application) AddUser(login, password string) error {
+	h, err := hash.Generate(password)
+	if err != nil {
+		return err
+	}
 	u := &User{
 		Login:       login,
-		Password:    password,
+		Password:    h,
 		Expressions: make(map[IDExpression]*Expression),
 		ID:          uuid.New().ID(),
 	}
 	a.Users = append(a.Users, u)
+	return nil
 }
 
 const GRPC_PORT = 8081
