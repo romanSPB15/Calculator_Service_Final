@@ -1,8 +1,6 @@
 package application_test
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	// Пакет gofakeit генерирует реалистичные данные, такие как username(в тесте как login) и пароль
@@ -20,11 +18,6 @@ func TestStorageSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to close storage: %v", err)
 	}
-}
-
-func Print[T any](s *T) {
-	d, _ := json.Marshal(*s)
-	fmt.Println(string(d))
 }
 
 // Тест на работу с пользователями
