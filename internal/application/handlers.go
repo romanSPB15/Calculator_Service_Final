@@ -12,28 +12,31 @@ import (
 )
 
 // Получить, есть ли такой пользователь
-func (a *Application) GetUserByRequest(req *http.Request) (*User, string) {
-	str := req.URL.Query().Get("token")
+func (a *Application) GetUserByRequest(req *http.Request) (*User, string, int) {
+	str := req.Header.Get("Authorization-Bearer")
+
 	if str == "" {
-		return nil, "token not found in request body"
+		return nil, "invalid header", http.StatusUnprocessableEntity
 	}
-	token, err := jwt.Parse(str, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(str, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("invalid token")
 		}
-
 		return []byte(SECRETKEY), nil
 	})
+	if err == jwt.ErrTokenExpired {
+		return nil, "token is expired", http.StatusUnauthorized
+	}
 	if err != nil {
-		return nil, err.Error()
+		return nil, "invalid token", http.StatusUnprocessableEntity
 	}
-	login := token.Claims.(jwt.MapClaims)["login"]
-	password := token.Claims.(jwt.MapClaims)["password"]
-	u, ok := a.GetUser(login.(string), password.(string))
+	login := token.Claims.(jwt.MapClaims)["login"].(string)
+	password := token.Claims.(jwt.MapClaims)["password"].(string)
+	u, ok := a.GetUser(login, password)
 	if !ok {
-		return nil, "user not found"
+		return nil, "user with login and password not found", http.StatusUnprocessableEntity
 	}
-	return u, ""
+	return u, "", 200
 }
 
 // Добавление выражения через http://localhost:8080/api/v1/calculate POST.
@@ -50,9 +53,9 @@ func (a *Application) AddExpressionHandler(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	u, str := a.GetUserByRequest(r)
+	u, str, code := a.GetUserByRequest(r)
 	if str != "" {
-		http.Error(w, str, http.StatusUnprocessableEntity)
+		http.Error(w, str, code)
 		return
 	}
 	id := uuid.New().ID()
@@ -63,10 +66,10 @@ func (a *Application) AddExpressionHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	e := Expression{str, WaitStatus, 0}
-	u.Expressions[id] = &e
+	u.Expressions[id] = &e // panic: invalid memory address or nil pointer dereference
 	go func() {
 		e.Status = CalculationStatus
-		res, err := rpn.Calc(str, a.Tasks, a.Config.Debug, a.logger, a.env)
+		res, err := rpn.Calc(str, a.Tasks, a.env.DEBUG, a.logger, a.env)
 		if err != nil {
 			e.Status = ErrorStatus
 		} else {
@@ -85,7 +88,6 @@ func (a *Application) AddExpressionHandler(w http.ResponseWriter, r *http.Reques
 
 // Получение выражения через http://localhost:8080/api/v1/expression/:id GET.
 func (a *Application) GetExpressionHandler(w http.ResponseWriter, r *http.Request) {
-
 	defer r.Body.Close()
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -97,9 +99,9 @@ func (a *Application) GetExpressionHandler(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	u, str := a.GetUserByRequest(r)
+	u, str, code := a.GetUserByRequest(r)
 	if str != "" {
-		http.Error(w, str, http.StatusUnprocessableEntity)
+		http.Error(w, str, code)
 		return
 	}
 	id := IDExpression(i)
@@ -122,9 +124,9 @@ func (a *Application) GetExpressionsHandler(w http.ResponseWriter, r *http.Reque
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	u, str := a.GetUserByRequest(r)
+	u, str, code := a.GetUserByRequest(r)
 	if str != "" {
-		http.Error(w, str, http.StatusUnprocessableEntity)
+		http.Error(w, str, code)
 		return
 	}
 	var ExpressionsID []ExpressionWithID

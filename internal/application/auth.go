@@ -15,6 +15,7 @@ type User struct {
 	Login, Password string
 	Expressions     map[IDExpression]*Expression
 }
+
 type AuthRequest struct {
 	Password string `json:"password"`
 	Login    string `json:"login"`
@@ -27,32 +28,7 @@ func init() {
 	}
 }
 
-var SECRETKEY = "romanSPB15" // по умолчанию
-
-// Получить, есть ли такой пользователь
-func (s *GRPCServer) GetUserByToken(req map[string]string) (*User, string) {
-	str, has := req["token"]
-	if !has {
-		return nil, "token not found in url"
-	}
-	token, err := jwt.Parse(str, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("invalid token")
-		}
-
-		return []byte(SECRETKEY), nil
-	})
-	if err != nil {
-		return nil, err.Error()
-	}
-	login := token.Claims.(jwt.MapClaims)["login"]
-	password := token.Claims.(jwt.MapClaims)["password"]
-	u, ok := s.app.GetUser(login.(string), password.(string))
-	if !ok {
-		return nil, "user not found"
-	}
-	return u, ""
-}
+var SECRETKEY = "romanSPB15" // romanSPB15 - по умолчанию
 
 func MakeToken(login, password string) string {
 	now := time.Now()
@@ -60,7 +36,7 @@ func MakeToken(login, password string) string {
 		"login":    login,
 		"password": password,
 		"nbf":      now.Unix(),
-		"exp":      now.Add(time.Hour * 240).Unix(),
+		"exp":      now.Add(time.Minute * 15).Unix(),
 		"iat":      now.Unix(),
 	})
 
@@ -93,7 +69,6 @@ func (app *Application) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	app.AddUser(req.Login, req.Password)
-	app.logger.Printf("%s was registered", req.Login)
 	fmt.Fprint(w, MakeToken(req.Login, req.Password))
 }
 

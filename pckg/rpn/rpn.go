@@ -116,12 +116,12 @@ func isSign(value rune) bool {
 
 type IDTask = uint32
 
-var Errorexp = errors.New("expression is not valid")
-var Errordel = errors.New("division by zero")
+var ErrorInvalidExpr = errors.New("expression is invalid")
+var ErrorDivByZero = errors.New("division by zero")
 
 func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.Logger, env *env.List) (res ExpressionResultType, err0 error) {
 	if len(expression) < 3 {
-		return 0, Errorexp
+		return 0, ErrorInvalidExpr
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	b := ""
@@ -131,7 +131,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 	scc := 0
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
 	if isSign(rune(expression[0])) || isSign(rune(expression[len(expression)-1])) {
-		return 0, Errorexp
+		return 0, ErrorInvalidExpr
 	}
 	if strings.Contains(expression, "(") || strings.Contains(expression, ")") {
 		for i := 0; i < len(expression); i++ {
@@ -160,10 +160,13 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 		}
 	}
 	if isc != -1 {
-		return 0, Errorexp
+		return 0, ErrorInvalidExpr
 	}
 	priority := strings.ContainsRune(expression, '*') || strings.ContainsRune(expression, '/')
 	notpriority := strings.ContainsRune(expression, '+') || strings.ContainsRune(expression, '-')
+	if !priority && !notpriority {
+		return 0, ErrorInvalidExpr
+	}
 	if priority && notpriority {
 		for i := 1; i < len(expression); i++ {
 			value := rune(expression[i])
@@ -285,7 +288,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 					id := uuid.ID()
 					arg2 := convertString(b)
 					if arg2 == 0 {
-						return 0, Errordel
+						return 0, ErrorDivByZero
 					}
 					t := Task{
 						Arg1:          res,
@@ -316,7 +319,7 @@ func Calc(expression string, tasks *ConcurrentTaskMap, debug bool, logger *log.L
 			/////////////////////////////////////////////////////////////////////////////////////////////
 		case value == 's':
 		default:
-			return 0, Errorexp
+			return 0, ErrorInvalidExpr
 		}
 	}
 	return res, nil

@@ -63,7 +63,6 @@ type AgentResult struct {
 
 // Приложение
 type Application struct {
-	Config       *config
 	NumGoroutine int
 	workerId     int
 	grpcServer   *grpc.Server
@@ -71,7 +70,7 @@ type Application struct {
 	Users        []*User
 	Tasks        *rpn.ConcurrentTaskMap
 	logger       *log.Logger
-	storage      *Storage
+	Storage      *Storage
 	server       *http.Server
 	grpcListener net.Listener
 	env          *env.List     // Переменные среды
@@ -80,7 +79,6 @@ type Application struct {
 
 func New() *Application {
 	app := &Application{
-		Config:       newConfig(),
 		NumGoroutine: 0,
 		workerId:     0,
 		Tasks:        rpn.NewConcurrentTaskMap(),
@@ -93,13 +91,13 @@ func New() *Application {
 }
 
 func (a *Application) LoadData() error {
-	usersList, err := a.storage.SelectAllUsers()
+	usersList, err := a.Storage.SelectAllUsers()
 	if err != nil {
 		return err
 	}
 	a.Users = usersList
 	for _, u := range usersList {
-		expressionsList, err := a.storage.SelectExpressionsForUser(u)
+		expressionsList, err := a.Storage.SelectExpressionsForUser(u)
 		if err != nil {
 			return err
 		}
@@ -112,17 +110,17 @@ func (a *Application) LoadData() error {
 }
 
 func (a *Application) SaveData() error {
-	err := a.storage.Clear()
+	err := a.Storage.Clear()
 	if err != nil {
 		return err
 	}
 	for _, u := range a.Users {
-		err = a.storage.InsertUser(u)
+		err = a.Storage.InsertUser(u)
 		if err != nil {
 			return err
 		}
 		for id, expr := range u.Expressions {
-			err = a.storage.InsertExpression(&ExpressionWithID{Expression: *expr, ID: id}, u)
+			err = a.Storage.InsertExpression(&ExpressionWithID{Expression: *expr, ID: id}, u)
 			if err != nil {
 				return err
 			}
@@ -133,7 +131,7 @@ func (a *Application) SaveData() error {
 
 func (a *Application) GetUser(login, password string) (u *User, ok bool) {
 	for _, v := range a.Users {
-		if hash.Compare(v.Password, password) && v.Login == login {
+		if hash.Compare(v.Password, password) && v.Login == login { // пользователь найден!
 			u = v
 			ok = true
 			return
@@ -159,9 +157,13 @@ func (a *Application) AddUser(login, password string) error {
 
 const GRPC_PORT = 8081
 
-func (app *Application) Init() error {
+func (app *Application) Init(test ...bool) error {
 	var err error
-	app.storage, err = OpenStorage(AppStoragePath)
+	path := AppStoragePath
+	if len(test) > 0 && test[0] {
+		path = TestStoragePath
+	}
+	app.Storage, err = OpenStorage(path)
 	if err != nil {
 		return err
 	}
@@ -172,7 +174,7 @@ func (app *Application) Init() error {
 	}
 	pb.RegisterCalculatorServiceServer(app.grpcServer, app.calcServer)
 
-	app.env.InitEnv(dir.EnvFile()) // Иницилизация переменных среды
+	app.env.InitEnv(dir.EnvFile(test...)) // Иницилизация переменных среды
 
 	addr := fmt.Sprintf("%s:%d", app.env.HOST, app.env.PORT)
 
@@ -198,26 +200,32 @@ func (app *Application) Init() error {
 // Запуск системы
 func (app *Application) Start() {
 	go func() {
-		app.logger.Println("Agent runned")
+		if app.env.DEBUG {
+			app.logger.Println("Agent runned")
+		}
 		if err := app.runAgent(); err != nil {
 			app.logger.Fatal("falied to run agent: ", err)
 		}
 	}()
 
 	go func() {
-		app.logger.Println("GRPC runned")
+		if app.env.DEBUG {
+			app.logger.Println("GRPC runned")
+		}
 		if err := app.grpcServer.Serve(app.grpcListener); err != nil {
 			app.logger.Fatal("failed to serving grpc: ", err)
 		}
 	}()
 
-	app.logger.Println("Main runned")
+	if app.env.DEBUG {
+		app.logger.Println("Main runned")
+	}
 	app.logger.Fatal("main: failed to serving: ", app.server.ListenAndServe())
 }
 
 // Запуск системы
-func (app *Application) Run() {
-	err := app.Init()
+func (app *Application) Run(test ...bool) {
+	err := app.Init(test...)
 	if err != nil {
 		app.logger.Fatal("failed to init application: ", err)
 	}
@@ -227,8 +235,10 @@ func (app *Application) Run() {
 func (app *Application) Stop() {
 	close(app.agentStop)
 	app.grpcServer.GracefulStop()
-	app.logger.Println("Gracefully stopped")
-	defer app.storage.Close()
+	if app.env.DEBUG {
+		app.logger.Println("Gracefully stopped")
+	}
+	defer app.Storage.Close()
 	err := app.SaveData()
 	if err != nil {
 		app.logger.Fatal("failed to save data: ", err)

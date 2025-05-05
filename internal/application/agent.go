@@ -17,7 +17,7 @@ var AgentReqestTime = time.Millisecond * 1
 func (app *Application) worker(resp *pb.GetTaskResponse, client pb.CalculatorServiceClient) {
 	n := app.workerId
 	app.workerId++
-	if app.Config.Debug {
+	if app.env.DEBUG {
 		app.logger.Println("worker runned", n)
 	}
 	app.NumGoroutine++
@@ -31,8 +31,8 @@ func (app *Application) worker(resp *pb.GetTaskResponse, client pb.CalculatorSer
 			OperationTime: int(resp.OperationTime),
 		},
 	}
-	res := t.Run(app.Config.Debug, app.logger)
-	if app.Config.Debug {
+	res := t.Run(app.env.DEBUG, app.logger)
+	if app.env.DEBUG {
 		app.logger.Println("worker", n, "add result reqest")
 	}
 	_, err := client.SaveTaskResult(context.TODO(), &pb.SaveTaskResultRequest{
@@ -43,7 +43,7 @@ func (app *Application) worker(resp *pb.GetTaskResponse, client pb.CalculatorSer
 		app.logger.Fatalf("falied to set result task: %d: %v", resp.Id, err)
 	}
 	app.NumGoroutine--
-	if app.Config.Debug {
+	if app.env.DEBUG {
 		app.logger.Println("worker completed", n)
 	}
 }
@@ -65,7 +65,7 @@ func (app *Application) runAgent() error {
 	c := pb.NewCalculatorServiceClient(conn)
 
 	go func() {
-		if app.Config.Debug {
+		if app.env.DEBUG {
 			app.logger.Println("agent runned")
 		}
 		for {
@@ -80,7 +80,7 @@ func (app *Application) runAgent() error {
 						res <- err
 						return
 					}
-					if app.Config.Debug {
+					if app.env.DEBUG {
 						app.logger.Println("agent received task")
 					}
 					go app.worker(resp, c)

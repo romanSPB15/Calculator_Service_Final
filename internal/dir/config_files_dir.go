@@ -23,7 +23,10 @@ func JsonFile() string {
 }
 
 // config/.env
-func EnvFile() string {
+func EnvFile(test ...bool) string {
 	res := configFiles() + `.env`
+	if len(test) > 0 && test[0] {
+		res = "../../config/.env"
+	}
 	return res
 }

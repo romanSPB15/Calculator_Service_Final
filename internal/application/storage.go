@@ -2,6 +2,7 @@ package application
 
 import (
 	"database/sql"
+	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -9,11 +10,13 @@ import (
 // Хранилище
 type Storage struct {
 	db *sql.DB // База данных
+	mx *sync.Mutex
 }
 
+// Относительные директории файла data.db
 const (
-	AppStoragePath  = "./data/data.db"     // Директория файла базы данных когда рабочая директория /cmd
-	TestStoragePath = "../../data/data.db" // Директория файла базы данных когда рабочая директория /internal/application(для тестов)
+	AppStoragePath  = "./data/data.db"     // /cmd
+	TestStoragePath = "../../data/data.db" // /internal/application
 )
 
 // Открытие хранилища из файла базы данных
@@ -22,16 +25,18 @@ func OpenStorage(path string) (*Storage, error) {
 	if err != nil {
 		return nil, err
 	}
-	st := &Storage{db}
+	st := &Storage{db, &sync.Mutex{}}
 	return st, st.createTables()
 }
 
 // Создание таблиц, если они не существуют
 func (st *Storage) createTables() error {
+	st.mx.Lock()
+	defer st.mx.Unlock()
 	const (
 		usersTable = `
 	CREATE TABLE IF NOT EXISTS users(
-		id INTEGER PRIMARY KEY AUTOINCREMENT, 
+		id INTEGER PRIMARY KEY, 
 		login TEXT,
 		password TEXT
 	);`
@@ -40,9 +45,9 @@ func (st *Storage) createTables() error {
 	CREATE TABLE IF NOT EXISTS expressions(
 		id INTEGER PRIMARY KEY AUTOINCREMENT, 
 		data TEXT NOT NULL,
-		user_id INTEGER NOT NULL,
 		status TEXT NOT NULL,
-		result FLOAT
+		result FLOAT,
+		user_id INTEGER NOT NULL
 	);`
 	)
 
@@ -59,6 +64,8 @@ func (st *Storage) createTables() error {
 
 // Очистить базу
 func (st *Storage) Clear() error {
+	st.mx.Lock()
+	defer st.mx.Unlock()
 	var (
 		q1 = `DELETE FROM users;`
 		q2 = `DELETE FROM expressions;`
@@ -74,13 +81,17 @@ func (st *Storage) Clear() error {
 
 // Добавить пользователя
 func (st *Storage) InsertUser(user *User) error {
-	var q = `INSERT INTO users (login, password) values ($1, $2)`
-	_, err := st.db.Exec(q, user.Login, user.Password)
+	st.mx.Lock()
+	defer st.mx.Unlock()
+	var q = `INSERT INTO users (id, login, password) values ($1, $2, $3)`
+	_, err := st.db.Exec(q, user.ID, user.Login, user.Password)
 	return err
 }
 
 // Добавить выражение
 func (st *Storage) InsertExpression(exp *ExpressionWithID, forUser *User) error {
+	st.mx.Lock()
+	defer st.mx.Unlock()
 	var q = `INSERT INTO expressions (id, data, status, result, user_id) values ($1, $2, $3, $4, $5)`
 	_, err := st.db.Exec(q, exp.ID, exp.Data, exp.Status, exp.Result, forUser.ID)
 	return err
@@ -88,6 +99,8 @@ func (st *Storage) InsertExpression(exp *ExpressionWithID, forUser *User) error 
 
 // Получить всех пользователей
 func (st *Storage) SelectAllUsers() ([]*User, error) {
+	st.mx.Lock()
+	defer st.mx.Unlock()
 	var users []*User
 	var q = `SELECT id, login, password FROM users`
 	rows, err := st.db.Query(q)
@@ -115,33 +128,36 @@ type ExpressionForUser struct {
 }
 
 // Получить все выражения для пользователя user
-func (st *Storage) SelectExpressionsForUser(user *User) ([]ExpressionWithID, error) {
-	var expressions []ExpressionWithID
+func (st *Storage) SelectExpressionsForUser(user *User) ([]*ExpressionWithID, error) {
+	st.mx.Lock()
+	defer st.mx.Unlock()
+	var expressions []*ExpressionWithID
 	var q = `SELECT id, data, status, result, user_id FROM expressions`
 
 	rows, err := st.db.Query(q)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
-		e := ExpressionForUser{}
+		e := &ExpressionForUser{}
 		err := rows.Scan(&e.ID, &e.Data, &e.Status, &e.Result, &e.UserID)
 		if err != nil {
 			return nil, err
 		}
 		if e.UserID == user.ID {
-			expressions = append(expressions, e.ExpressionWithID)
+			expressions = append(expressions, &e.ExpressionWithID)
 		}
 	}
 
-	return expressions, nil
+	return expressions, rows.Close()
 }
 
 // Получить все выражения в базе
-func (st *Storage) SelectExpressions() ([]ExpressionForUser, error) {
-	var expressions []ExpressionForUser
+func (st *Storage) SelectExpressions() ([]*ExpressionForUser, error) {
+	st.mx.Lock()
+	defer st.mx.Unlock()
+	var expressions []*ExpressionForUser
 	var q = `SELECT id, data, status, result, user_id FROM expressions`
 
 	rows, err := st.db.Query(q)
@@ -151,7 +167,7 @@ func (st *Storage) SelectExpressions() ([]ExpressionForUser, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		e := ExpressionForUser{}
+		e := &ExpressionForUser{}
 		err := rows.Scan(&e.ID, &e.Data, &e.Status, &e.Result, &e.UserID)
 		if err != nil {
 			return nil, err
@@ -163,6 +179,9 @@ func (st *Storage) SelectExpressions() ([]ExpressionForUser, error) {
 }
 
 // Закрыть базу данных
-func (s *Storage) Close() error {
-	return s.db.Close()
+func (st *Storage) Close() error {
+	st.mx.Lock()
+	err := st.db.Close()
+	st.mx.Unlock()
+	return err
 }
