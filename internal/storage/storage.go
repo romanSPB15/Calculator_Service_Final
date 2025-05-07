@@ -1,10 +1,11 @@
-package application
+package storage
 
 import (
 	"database/sql"
 	"sync"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/types"
 )
 
 // Хранилище
@@ -13,14 +14,8 @@ type Storage struct {
 	mx *sync.Mutex
 }
 
-// Относительные директории файла data.db
-const (
-	AppStoragePath  = "./data/data.db"     // /cmd
-	TestStoragePath = "../../data/data.db" // /internal/application
-)
-
 // Открытие хранилища из файла базы данных
-func OpenStorage(path string) (*Storage, error) {
+func Open(path string) (*Storage, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
@@ -80,7 +75,7 @@ func (st *Storage) Clear() error {
 }
 
 // Добавить пользователя
-func (st *Storage) InsertUser(user *User) error {
+func (st *Storage) InsertUser(user *types.User) error {
 	st.mx.Lock()
 	defer st.mx.Unlock()
 	var q = `INSERT INTO users (id, login, password) values ($1, $2, $3)`
@@ -89,7 +84,7 @@ func (st *Storage) InsertUser(user *User) error {
 }
 
 // Добавить выражение
-func (st *Storage) InsertExpression(exp *ExpressionWithID, forUser *User) error {
+func (st *Storage) InsertExpression(exp *types.ExpressionWithID, forUser *types.User) error {
 	st.mx.Lock()
 	defer st.mx.Unlock()
 	var q = `INSERT INTO expressions (id, data, status, result, user_id) values ($1, $2, $3, $4, $5)`
@@ -98,10 +93,10 @@ func (st *Storage) InsertExpression(exp *ExpressionWithID, forUser *User) error 
 }
 
 // Получить всех пользователей
-func (st *Storage) SelectAllUsers() ([]*User, error) {
+func (st *Storage) SelectAllUsers() ([]*types.User, error) {
 	st.mx.Lock()
 	defer st.mx.Unlock()
-	var users []*User
+	var users []*types.User
 	var q = `SELECT id, login, password FROM users`
 	rows, err := st.db.Query(q)
 	if err != nil {
@@ -110,7 +105,7 @@ func (st *Storage) SelectAllUsers() ([]*User, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		u := &User{}
+		u := &types.User{}
 		err := rows.Scan(&u.ID, &u.Login, &u.Password)
 		if err != nil {
 			return nil, err
@@ -121,17 +116,11 @@ func (st *Storage) SelectAllUsers() ([]*User, error) {
 	return users, nil
 }
 
-// Выражение с UserID
-type ExpressionForUser struct {
-	ExpressionWithID
-	UserID uint32
-}
-
 // Получить все выражения для пользователя user
-func (st *Storage) SelectExpressionsForUser(user *User) ([]*ExpressionWithID, error) {
+func (st *Storage) SelectExpressionsForUser(user *types.User) ([]*types.ExpressionWithID, error) {
 	st.mx.Lock()
 	defer st.mx.Unlock()
-	var expressions []*ExpressionWithID
+	var expressions []*types.ExpressionWithID
 	var q = `SELECT id, data, status, result, user_id FROM expressions`
 
 	rows, err := st.db.Query(q)
@@ -140,7 +129,7 @@ func (st *Storage) SelectExpressionsForUser(user *User) ([]*ExpressionWithID, er
 	}
 
 	for rows.Next() {
-		e := &ExpressionForUser{}
+		e := &types.ExpressionForUser{}
 		err := rows.Scan(&e.ID, &e.Data, &e.Status, &e.Result, &e.UserID)
 		if err != nil {
 			return nil, err
@@ -154,10 +143,10 @@ func (st *Storage) SelectExpressionsForUser(user *User) ([]*ExpressionWithID, er
 }
 
 // Получить все выражения в базе
-func (st *Storage) SelectExpressions() ([]*ExpressionForUser, error) {
+func (st *Storage) SelectExpressions() ([]*types.ExpressionForUser, error) {
 	st.mx.Lock()
 	defer st.mx.Unlock()
-	var expressions []*ExpressionForUser
+	var expressions []*types.ExpressionForUser
 	var q = `SELECT id, data, status, result, user_id FROM expressions`
 
 	rows, err := st.db.Query(q)
@@ -167,7 +156,7 @@ func (st *Storage) SelectExpressions() ([]*ExpressionForUser, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		e := &ExpressionForUser{}
+		e := &types.ExpressionForUser{}
 		err := rows.Scan(&e.ID, &e.Data, &e.Status, &e.Result, &e.UserID)
 		if err != nil {
 			return nil, err

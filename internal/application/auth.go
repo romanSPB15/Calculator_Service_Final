@@ -8,18 +8,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/consts/errors"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/types"
 )
-
-type User struct {
-	ID              uint32
-	Login, Password string
-	Expressions     map[IDExpression]*Expression
-}
-
-type AuthRequest struct {
-	Password string `json:"password"`
-	Login    string `json:"login"`
-}
 
 func init() {
 	key, has := os.LookupEnv("SECRETKEY")
@@ -49,23 +40,23 @@ func MakeToken(login, password string) string {
 
 func (app *Application) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	defer r.Body.Close()
-	req := new(AuthRequest)
+	req := new(types.RegisterLoginRequest)
 	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
-		http.Error(w, "invalid body", http.StatusUnprocessableEntity)
+		http.Error(w, errors.InvalidBody, http.StatusUnprocessableEntity)
 		return
 	}
 	if len(req.Password) < 5 {
-		http.Error(w, "short password", http.StatusUnprocessableEntity)
+		http.Error(w, errors.ShortPassword, http.StatusUnprocessableEntity)
 		return
 	}
 	_, ok := app.GetUser(req.Login, req.Password)
 	if ok {
-		http.Error(w, "user already exists", http.StatusUnprocessableEntity)
+		http.Error(w, errors.UserAlreadyExists, http.StatusUnprocessableEntity)
 		return
 	}
 	app.AddUser(req.Login, req.Password)
@@ -74,19 +65,19 @@ func (app *Application) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 
 func (app *Application) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 	defer r.Body.Close()
-	req := new(AuthRequest)
+	req := new(types.RegisterLoginRequest)
 	err := json.NewDecoder(r.Body).Decode(req)
 	if err != nil {
-		http.Error(w, "invalid body", http.StatusUnprocessableEntity)
+		http.Error(w, errors.InvalidBody, http.StatusUnprocessableEntity)
 		return
 	}
 	_, ok := app.GetUser(req.Login, req.Password)
 	if !ok {
-		http.Error(w, "invalid login or password", http.StatusUnprocessableEntity)
+		http.Error(w, errors.UserNotFound, http.StatusUnprocessableEntity)
 		return
 	}
 	fmt.Fprint(w, MakeToken(req.Login, req.Password))

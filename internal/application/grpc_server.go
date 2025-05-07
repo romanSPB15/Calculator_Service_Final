@@ -3,7 +3,8 @@ package application
 import (
 	"context"
 
-	"github.com/romanSPB15/Calculator_Service_Final/pckg/rpn"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/consts"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/types"
 	pb "github.com/romanSPB15/Calculator_Service_Final/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,13 +25,15 @@ var (
 
 // Получение задачи на выполнение
 func (s *GRPCServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.GetTaskResponse, error) {
-	var id rpn.IDTask = 1<<32 - 1
+	var id types.TaskID = 1<<32 - 1
+	s.app.Tasks.Lock()
 	for k, v := range s.app.Tasks.Map() {
-		if v.Status == WaitStatus {
+		if v.Status == consts.WaitStatus {
 			id = k
 			break
 		}
 	}
+	s.app.Tasks.Unlock()
 	if id == 1<<32-1 {
 		return nil, TaskNotFound
 	}

@@ -10,6 +10,9 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/consts"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/types"
 )
 
 var (
@@ -64,38 +67,7 @@ func loadInfo() {
 	fmt.Println(token)
 }
 
-type CalculateResponse struct {
-	ID uint32 `json:"id"`
-}
-
-// Выражение
-type Expression struct {
-	Data   string  `json:"data"`
-	Status string  `json:"status"`
-	Result float64 `json:"result"`
-}
-
-// Выражение с ID
-type ExpressionWithID struct {
-	ID IDExpression `json:"id"`
-	Expression
-}
-
-// ID выражения
-type IDExpression = uint32
-
-type GetExpressionHandlerResult struct {
-	Expression ExpressionWithID `json:"expression"`
-}
-
-const (
-	WaitStatus        = "Wait"
-	OKStatus          = "OK"
-	CalculationStatus = "Calculation"
-	ErrorStatus       = "Error"
-)
-
-func wait(id uint32) (float64, string) {
+func wait(id uint32) (float64, types.Status) {
 	for {
 		<-time.After(time.Millisecond * 10)
 		url := fmt.Sprintf("http://localhost:8080/api/v1/expressions/%d", id)
@@ -112,10 +84,10 @@ func wait(id uint32) (float64, string) {
 		if resp.StatusCode != 200 {
 			fail("failed to get expression: status code: ", fmt.Errorf(resp.Status))
 		}
-		geResp := new(GetExpressionHandlerResult)
+		geResp := new(types.GetExpressionHandlerResult)
 		json.NewDecoder(resp.Body).Decode(geResp)
 		resp.Body.Close()
-		if geResp.Expression.Status != WaitStatus && geResp.Expression.Status != CalculationStatus {
+		if geResp.Expression.Status != consts.WaitStatus && geResp.Expression.Status != consts.CalculationStatus {
 			return geResp.Expression.Result, geResp.Expression.Status
 		}
 	}
@@ -183,11 +155,11 @@ func main() {
 					b, _ := io.ReadAll(resp.Body)
 					fail("falied to calculate:", fmt.Errorf("%s: %s", resp.Status, string(b)))
 				}
-				cResp := new(CalculateResponse)
+				cResp := new(types.CalculateHandlerResponse)
 				json.NewDecoder(resp.Body).Decode(cResp)
 				resp.Body.Close()
 				res, s := wait(cResp.ID)
-				if s == ErrorStatus {
+				if s == consts.ErrorStatus {
 					fmt.Println("Invalid expression")
 					go f()
 					return false

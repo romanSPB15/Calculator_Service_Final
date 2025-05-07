@@ -1,16 +1,20 @@
-package application_test
+// Тесты хранилища.
+// Внимание! Тест почистит базу данных для работы без ошибок
+package storage_test
 
 import (
 	"testing"
 
 	// Пакет gofakeit генерирует реалистичные данные, такие как username(в тесте как login) и пароль
 	"github.com/brianvoe/gofakeit"
-	"github.com/romanSPB15/Calculator_Service_Final/internal/application"
+	"github.com/romanSPB15/Calculator_Service_Final/internal/storage"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/consts"
+	"github.com/romanSPB15/Calculator_Service_Final/pckg/types"
 )
 
 // Простой тест для проверки открытия/закрытия
 func TestStorageSimple(t *testing.T) {
-	storage, err := application.OpenStorage(application.TestStoragePath)
+	storage, err := storage.Open(consts.TestStoragePath)
 	if err != nil {
 		t.Fatalf("Failed to open storage: %v", err)
 	}
@@ -22,17 +26,17 @@ func TestStorageSimple(t *testing.T) {
 
 // Тест на работу с пользователями
 func TestStorageWorkUsers(t *testing.T) {
-	storage, err := application.OpenStorage(application.TestStoragePath) // Открываем базу данных
+	storage, err := storage.Open(consts.TestStoragePath) // Открываем базу данных
 	if err != nil {
 		t.Fatalf("Failed to open storage: %v", err) // Ошибка открытия базы данных
 	}
 	testcases := []struct {
 		Name  string
-		Users []*application.User
+		Users []*types.User
 	}{
 		{
 			Name: "one",
-			Users: []*application.User{
+			Users: []*types.User{
 				{
 					ID:       gofakeit.Uint32(),                                    // генерируем id
 					Login:    gofakeit.Username(),                                  // генерируем имя пользователя
@@ -42,7 +46,7 @@ func TestStorageWorkUsers(t *testing.T) {
 		},
 		{
 			Name: "two",
-			Users: []*application.User{
+			Users: []*types.User{
 				{
 					ID:       gofakeit.Uint32(),
 					Login:    gofakeit.Username(),
@@ -57,7 +61,7 @@ func TestStorageWorkUsers(t *testing.T) {
 		},
 		{
 			Name: "three",
-			Users: []*application.User{
+			Users: []*types.User{
 				{
 					ID:       gofakeit.Uint32(),
 					Login:    gofakeit.Username(),
@@ -98,7 +102,7 @@ func TestStorageWorkUsers(t *testing.T) {
 			}
 
 			for i, eu := range tc.Users { // проверяем содержимое списка
-				var su *application.User // порядок не сохраняется, ищем по id
+				var su *types.User // порядок не сохраняется, ищем по id
 				for _, u := range selectUsers {
 					if u.ID == eu.ID {
 						su = u
@@ -130,20 +134,20 @@ func TestStorageWorkUsers(t *testing.T) {
 
 // Тест на работу с выражениями
 func TestStorageWorkExpressions(t *testing.T) {
-	storage, err := application.OpenStorage(application.TestStoragePath) // Открываем базу данных
+	storage, err := storage.Open(consts.TestStoragePath) // Открываем базу данных
 	if err != nil {
 		t.Fatalf("Failed to open storage: %v", err) // Ошибка открытия базы данных
 	}
 	testcases := []struct {
 		Name        string
-		Expressions []*application.ExpressionWithID
+		Expressions []*types.ExpressionWithID
 	}{
 		{
 			Name: "one",
-			Expressions: []*application.ExpressionWithID{
+			Expressions: []*types.ExpressionWithID{
 				{
 					ID: gofakeit.Uint32(),
-					Expression: application.Expression{
+					Expression: types.Expression{
 						Data:   "2+2",
 						Status: "OK",
 						Result: 4,
@@ -153,10 +157,10 @@ func TestStorageWorkExpressions(t *testing.T) {
 		},
 		{
 			Name: "two",
-			Expressions: []*application.ExpressionWithID{
+			Expressions: []*types.ExpressionWithID{
 				{
 					ID: gofakeit.Uint32(),
-					Expression: application.Expression{
+					Expression: types.Expression{
 						Data:   "2+2",
 						Status: "OK",
 						Result: 4,
@@ -164,7 +168,7 @@ func TestStorageWorkExpressions(t *testing.T) {
 				},
 				{
 					ID: gofakeit.Uint32(),
-					Expression: application.Expression{
+					Expression: types.Expression{
 						Data:   "invalid",
 						Status: "error",
 						Result: 0,
@@ -174,25 +178,25 @@ func TestStorageWorkExpressions(t *testing.T) {
 		},
 		{
 			Name: "three",
-			Expressions: []*application.ExpressionWithID{
+			Expressions: []*types.ExpressionWithID{
 				{
 					ID: gofakeit.Uint32(),
-					Expression: application.Expression{
-						Data:   "2+2", // каккие-то данные
+					Expression: types.Expression{
+						Data:   "2+2", // какие-то данные
 						Status: "OK",
 						Result: 4,
 					},
 				},
 				{
 					ID: gofakeit.Uint32(),
-					Expression: application.Expression{
+					Expression: types.Expression{
 						Data:   "invalid",
 						Status: "error",
 					},
 				},
 				{
 					ID: gofakeit.Uint32(),
-					Expression: application.Expression{
+					Expression: types.Expression{
 						Data:   "2+(2/20)*100",
 						Status: "Wait",
 					},
@@ -200,7 +204,7 @@ func TestStorageWorkExpressions(t *testing.T) {
 			},
 		},
 	}
-	testUser := &application.User{
+	testUser := &types.User{
 		ID:       gofakeit.Uint32(),
 		Login:    gofakeit.Username(),
 		Password: gofakeit.Password(true, true, true, false, false, 8),
@@ -239,7 +243,7 @@ func TestStorageWorkExpressions(t *testing.T) {
 			}
 
 			for i, ee := range tc.Expressions { // проверяем содержимое списка
-				var se *application.ExpressionWithID // порядок не сохраняется, ищем по id
+				var se *types.ExpressionWithID // порядок не сохраняется, ищем по id
 				for _, e := range selectExpressions {
 					if e.ID == ee.ID {
 						se = e
@@ -264,7 +268,7 @@ func TestStorageWorkExpressions(t *testing.T) {
 					t.Fatalf("Selected expression #%d: invalid result: expected: %f, but got: %f", i, ee.Result, se.Result)
 				}
 
-				var sea *application.ExpressionWithID // порядок не сохраняется, ищем по id
+				var sea *types.ExpressionWithID // порядок не сохраняется, ищем по id
 				for _, e := range selectExpressions {
 					if e.ID == ee.ID {
 						sea = e

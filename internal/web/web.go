@@ -1,16 +1,11 @@
 package web
 
-/*
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
-
-	"github.com/gorilla/mux"
-	"github.com/romanSPB15/Calculator_Service_Final/pckg/dir"
 )
 
 var client http.Client
@@ -21,12 +16,20 @@ type Expression struct {
 	Result float64
 }
 
+func templateFile(name string) string {
+	return fmt.Sprintf("../web/template/%s", name)
+}
+
+func register_form(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, templateFile("register_form.html"))
+}
+
 func index(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, dir.GetTemplateFile("index.html"))
+	http.ServeFile(w, r, templateFile("index.html"))
 }
 
 func calculate(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, dir.GetTemplateFile("calc.html"))
+	http.ServeFile(w, r, templateFile("calc.html"))
 }
 
 func showID(w http.ResponseWriter, r *http.Request) {
@@ -119,14 +122,13 @@ func showExpression(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Run() {
-	router := mux.NewRouter()
-	router.HandleFunc("/api/v1/web", index)
-	router.HandleFunc("/api/v1/web/calculate", calculate)
-	router.HandleFunc("/api/v1/web/expressions", expressions)
-	router.HandleFunc("/api/v1/web/showid", showID)
-	router.HandleFunc("/api/v1/web/expression", expression)
-	router.HandleFunc("/api/v1/web/showexpr", showExpression)
-	http.Handle("/", router)
-	app.loggerFatalf("falied to listening port 8181: %v", http.ListenAndServe(":8181", nil))
-}*/
+func Router() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", index)
+	mux.HandleFunc("/calculate", calculate)
+	mux.HandleFunc("/expressions", expressions)
+	mux.HandleFunc("/showid", showID)
+	mux.HandleFunc("/expression", expression)
+	mux.HandleFunc("/showexpr", showExpression)
+	return mux
+}
