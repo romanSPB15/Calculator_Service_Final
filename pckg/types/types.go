@@ -111,6 +111,10 @@ type GetExpressionsHandlerResponse struct {
 }
 
 // Ответ обработчика LoginHandler
-type LoginResponse struct {
+type LoginHandlerResponse struct {
 	AccessToken string `json:"access_token"`
+}
+
+type AccountHandlerResponse struct {
+	Username string `json:"username"`
 }

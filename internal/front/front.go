@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"io/fs"
 	"log"
@@ -12,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/consts/errors"
@@ -59,19 +59,11 @@ func templateFile(name string) string {
 }
 
 func writeError(w http.ResponseWriter, text string, statusCode int, token string) {
+	w.WriteHeader(statusCode)
 	if token == "" {
-		w.WriteHeader(statusCode)
 		tmpl["errorWithoutAccount.html"].Execute(w, text)
 	} else {
-		w.WriteHeader(statusCode)
-		data := struct {
-			Text  string
-			Token string
-		}{
-			Text:  text,
-			Token: token,
-		}
-		tmpl["errorWithAccount.html"].Execute(w, data)
+		tmpl["errorWithAccount.html"].Execute(w, text)
 	}
 }
 
@@ -119,7 +111,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 			writeError(w, ruError(errors.ResponseError(resp)), resp.StatusCode, "")
 			return
 		}
-		var respStruct types.LoginResponse
+		var respStruct types.LoginHandlerResponse
 		json.NewDecoder(resp.Body).Decode(&respStruct)
 		resp.Body.Close()
 		executeTemplate("registerOk.html", w, respStruct.AccessToken)
@@ -144,24 +136,34 @@ func login(w http.ResponseWriter, r *http.Request) {
 			writeError(w, ruError(errors.ResponseError(resp)), resp.StatusCode, "")
 			return
 		}
-		respStruct := new(types.LoginResponse)
+		respStruct := new(types.LoginHandlerResponse)
 		json.NewDecoder(resp.Body).Decode(respStruct)
 		resp.Body.Close()
-		executeTemplate("loginOk.html", w, respStruct.AccessToken)
 		cookie := &http.Cookie{
 			Name:     "token",
 			Value:    respStruct.AccessToken,
+			SameSite: http.SameSiteStrictMode,
+
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: true,
 		}
 		http.SetCookie(w, cookie)
+		executeTemplate("loginOk.html", w, respStruct.AccessToken)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, templateFile("main/index.html"))
+	_, err := r.Cookie("token")
+	text := `<p><a href="/api/v1/web/account">Мой Аккаунт</a></p>`
+	if err != nil {
+		text = `
+		<p><a href="/api/v1/web/register">Зарегистрироваться</a></p>
+        <p><a href="/api/v1/web/login">Войти</a></p>
+		`
+	}
+	executeTemplate("index.html", w, text)
 }
 
 func calculate(w http.ResponseWriter, r *http.Request) {
@@ -264,14 +266,28 @@ func showExpression(w http.ResponseWriter, r *http.Request) {
 
 func account(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
-	fmt.Println(r.Cookies())
 	if err != nil {
-		fmt.Println(err)
 		http.Redirect(w, r, "http://"+addr+"/api/v1/web/login", http.StatusSeeOther)
 		return
 	}
-	fmt.Fprint(w, cookie.Value)
-	//executeTemplate("account.html", w, cookie.Value)
+	url := "http://" + addr + "/api/v1/account"
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+cookie.Value)
+	resp, err := client.Do(req) // Делаем запрос
+	if err != nil {
+		panic(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		writeError(w, fmt.Sprintln("internal error", resp.Status, "-", errors.ResponseError(resp)), 500, cookie.Value)
+		return
+	}
+	respStruct := new(types.AccountHandlerResponse)
+	defer resp.Body.Close()
+	json.NewDecoder(resp.Body).Decode(respStruct)
+	executeTemplate("account.html", w, respStruct)
 }
 
 func Handle(mux *http.ServeMux) {

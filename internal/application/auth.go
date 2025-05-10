@@ -27,7 +27,7 @@ func (app *Application) MakeToken(id types.UserID) string {
 }
 
 func makeLoginResponse(token string, w http.ResponseWriter) {
-	b, err := json.Marshal(types.LoginResponse{AccessToken: token})
+	b, err := json.Marshal(types.LoginHandlerResponse{AccessToken: token})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

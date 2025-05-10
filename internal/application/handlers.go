@@ -167,3 +167,19 @@ func (a *Application) GetExpressionsHandler(w http.ResponseWriter, r *http.Reque
 	}
 	w.Write(data)
 }
+
+func (a *Application) AccountHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	u, str, code := a.GetUserByRequest(r)
+	if str != "" {
+		http.Error(w, str, code)
+		return
+	}
+	resp := types.AccountHandlerResponse{
+		Username: u.Login,
+	}
+	json.NewEncoder(w).Encode(resp)
+}

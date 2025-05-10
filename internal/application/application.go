@@ -167,6 +167,7 @@ func (app *Application) Init(test ...bool) error {
 	mux.HandleFunc("/api/v1/calculate", app.AddExpressionHandler)
 	mux.HandleFunc("/api/v1/expressions/{id}", app.GetExpressionHandler)
 	mux.HandleFunc("/api/v1/expressions", app.GetExpressionsHandler)
+	mux.HandleFunc("/api/v1/account", app.AccountHandler)
 	if !testFlag && app.env.WEB {
 		front.SetAddr(addr)
 		front.Handle(mux)

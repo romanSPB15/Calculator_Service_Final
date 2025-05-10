@@ -54,7 +54,7 @@ func Login(login, password string) (string, error) {
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("status: %s, error: %s", resp.Status, string(b))
 	}
-	respStruct := types.LoginResponse{}
+	respStruct := types.LoginHandlerResponse{}
 	json.Unmarshal(b, &respStruct)
 	return respStruct.AccessToken, err
 }
