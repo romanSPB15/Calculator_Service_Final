@@ -16,8 +16,8 @@ const (
 
 // Относительные директории файла data.db
 const (
-	AppStoragePath  = "./data/data.db"     // workdir=/cmd
-	TestStoragePath = "../../data/data.db" // workdir=/internal/application
+	AppStoragePath  = "./db/data.db"     // workdir=/cmd
+	TestStoragePath = "../../db/data.db" // workdir=/internal/application
 )
 
 // Время запроса агента
