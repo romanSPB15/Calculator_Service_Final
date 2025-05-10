@@ -4,13 +4,13 @@ import "time"
 
 // Задача - без ID, он в мапе
 type Task struct {
-	Arg1          TaskArg1Type   `json:"arg1"`
-	Arg2          TaskArg2Type   `json:"arg2"`
-	Operation     string         `json:"operation"`
-	OperationTime int            `json:"operation_time"`
-	Status        Status         `json:"-"`
-	Result        TaskResultType `json:"-"`
-	Done          chan struct{}  `json:"-"`
+	Arg1          float64       `json:"arg1"`
+	Arg2          float64       `json:"arg2"`
+	Operation     string        `json:"operation"`
+	OperationTime int           `json:"operation_time"`
+	Status        Status        `json:"-"`
+	Result        float64       `json:"-"`
+	Done          chan struct{} `json:"-"`
 }
 
 func (t *Task) Run() (res float64) {

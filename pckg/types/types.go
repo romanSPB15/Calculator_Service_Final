@@ -1,3 +1,5 @@
+// В этом пакете описаны все типы, использующиеся в калькуляторе.
+// Можно использовать для написания клиента.
 package types
 
 import "sync"
@@ -8,12 +10,7 @@ type TasksMap map[TaskID]*Task
 // Мап выражений пользователя
 type ExpressionsMap map[ExpressionID]*Expression
 
-type (
-	TaskArg1Type   = float64
-	TaskArg2Type   = float64
-	TaskResultType = float64
-)
-
+// Статус задачи или выражения
 type Status string
 
 // Конкурентный мап задач
@@ -53,9 +50,11 @@ func (cm *ConcurrentTasksMap) Map() map[TaskID]*Task {
 	return cm.m
 }
 
+type UserID = string
+
 // Пользователь
 type User struct {
-	ID              uint32
+	ID              UserID
 	Login, Password string
 	Expressions     ExpressionsMap
 }
@@ -65,8 +64,6 @@ type RegisterLoginRequest struct {
 	Password string `json:"password"`
 	Login    string `json:"login"`
 }
-
-type UserID = uint32
 
 // Выражение с ID и UserID
 type ExpressionForUser struct {
@@ -90,25 +87,30 @@ type ExpressionWithID struct {
 // ID выражения
 type ExpressionID = uint32
 
-// //////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Запросы/ответы
-type GetExpressionHandlerResult struct {
+
+// Запрос обработчика CalculateHandler
+type CalculateHandlerRequest struct {
+	Expression string `json:"expression"`
+}
+
+// Ответ обработчика CalculateHandler
+type CalculateHandlerResponse struct {
+	ID ExpressionID `json:"id"`
+}
+
+// Ответ обработчика GetExpressionHandler
+type GetExpressionHandlerResponse struct {
 	Expression ExpressionWithID `json:"expression"`
 }
 
-type GetExpressionsHandlerResult struct {
+// Ответ обработчика GetExpressionsHandler
+type GetExpressionsHandlerResponse struct {
 	Expressions []ExpressionWithID `json:"expressions"`
 }
 
-type GetTaskHandlerResult struct {
-	Task TaskID `json:"task"`
-}
-
-type AgentResult struct {
-	ID     TaskID  `json:"id"`
-	Result float64 `json:"result"`
-}
-
-type CalculateHandlerResponse struct {
-	ID ExpressionID `json:"id"`
+// Ответ обработчика LoginHandler
+type LoginResponse struct {
+	AccessToken string `json:"access_token"`
 }

@@ -13,9 +13,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/romanSPB15/Calculator_Service_Final/internal/env"
+	"github.com/romanSPB15/Calculator_Service_Final/internal/front"
 	"github.com/romanSPB15/Calculator_Service_Final/internal/hash"
 	"github.com/romanSPB15/Calculator_Service_Final/internal/storage"
-	"github.com/romanSPB15/Calculator_Service_Final/internal/web"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/consts"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/types"
 	pb "github.com/romanSPB15/Calculator_Service_Final/proto"
@@ -45,7 +45,7 @@ func New() *Application {
 		workerId:     0,
 		Tasks:        types.NewConcurrentTasksMap(),
 		grpcServer:   grpc.NewServer(),
-		logger:       log.New(os.Stdout, "app: ", log.Ltime),
+		logger:       log.New(os.Stdout, "app: ", log.LstdFlags),
 	}
 	app.calcServer = app.NewServer()
 	app.env = env.NewList()
@@ -113,28 +113,28 @@ func (a *Application) GetUserByID(id types.UserID) (u *types.User, ok bool) {
 	return
 }
 
-func (a *Application) AddUser(login, password string) error {
+func (a *Application) AddUser(login, password string) (types.UserID, error) {
 	h, err := hash.Generate(password)
 	if err != nil {
-		return err
+		return "", err
 	}
 	u := &types.User{
 		Login:       login,
 		Password:    h,
 		Expressions: make(types.ExpressionsMap),
-		ID:          uuid.New().ID(),
+		ID:          uuid.New().String(),
 	}
 	a.Users = append(a.Users, u)
-	return nil
+	return u.ID, nil
 }
 
 const GRPC_PORT = 8081
 
-func envFile(test []bool) string {
-	if len(test) > 0 && test[0] {
+func envFile(testFlag bool) string {
+	if testFlag {
 		return "../../config/.env"
 	}
-	return "../config/.env"
+	return "config/.env"
 }
 
 func (app *Application) Init(test ...bool) error {
@@ -155,7 +155,7 @@ func (app *Application) Init(test ...bool) error {
 	}
 	pb.RegisterCalculatorServiceServer(app.grpcServer, app.calcServer)
 
-	app.env.InitEnv(envFile(test)) // Иницилизация переменных среды
+	app.env.InitEnv(envFile(testFlag)) // Иницилизация переменных среды
 
 	addr := fmt.Sprintf("%s:%d", app.env.HOST, app.env.PORT)
 
@@ -167,8 +167,9 @@ func (app *Application) Init(test ...bool) error {
 	mux.HandleFunc("/api/v1/calculate", app.AddExpressionHandler)
 	mux.HandleFunc("/api/v1/expressions/{id}", app.GetExpressionHandler)
 	mux.HandleFunc("/api/v1/expressions", app.GetExpressionsHandler)
-	if !testFlag {
-		mux.Handle("/api/v1/web", web.Router())
+	if !testFlag && app.env.WEB {
+		front.SetAddr(addr)
+		front.Handle(mux)
 	}
 
 	app.server = &http.Server{Addr: addr, Handler: mux}

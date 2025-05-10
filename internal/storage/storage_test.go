@@ -7,6 +7,7 @@ import (
 
 	// Пакет gofakeit генерирует реалистичные данные, такие как username(в тесте как login) и пароль
 	"github.com/brianvoe/gofakeit"
+	"github.com/google/uuid"
 	"github.com/romanSPB15/Calculator_Service_Final/internal/storage"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/consts"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/types"
@@ -38,7 +39,7 @@ func TestStorageWorkUsers(t *testing.T) {
 			Name: "one",
 			Users: []*types.User{
 				{
-					ID:       gofakeit.Uint32(),                                    // генерируем id
+					ID:       uuid.NewString(),                                     // генерируем id
 					Login:    gofakeit.Username(),                                  // генерируем имя пользователя
 					Password: gofakeit.Password(true, true, true, false, false, 8), // генерируем пароль
 				},
@@ -48,12 +49,12 @@ func TestStorageWorkUsers(t *testing.T) {
 			Name: "two",
 			Users: []*types.User{
 				{
-					ID:       gofakeit.Uint32(),
+					ID:       uuid.NewString(),
 					Login:    gofakeit.Username(),
 					Password: gofakeit.Password(true, true, true, false, false, 8),
 				},
 				{
-					ID:       gofakeit.Uint32(),
+					ID:       uuid.NewString(),
 					Login:    gofakeit.Username(),
 					Password: gofakeit.Password(true, true, true, false, false, 8),
 				},
@@ -63,17 +64,17 @@ func TestStorageWorkUsers(t *testing.T) {
 			Name: "three",
 			Users: []*types.User{
 				{
-					ID:       gofakeit.Uint32(),
+					ID:       uuid.NewString(),
 					Login:    gofakeit.Username(),
 					Password: gofakeit.Password(true, true, true, false, false, 8),
 				},
 				{
-					ID:       gofakeit.Uint32(),
+					ID:       uuid.NewString(),
 					Login:    gofakeit.Username(),
 					Password: gofakeit.Password(true, true, true, false, false, 8),
 				},
 				{
-					ID:       gofakeit.Uint32(),
+					ID:       uuid.NewString(),
 					Login:    gofakeit.Username(),
 					Password: gofakeit.Password(true, true, true, false, false, 8),
 				},
@@ -111,11 +112,11 @@ func TestStorageWorkUsers(t *testing.T) {
 				}
 
 				if su == nil {
-					t.Fatalf("User with id #%d not found", eu.ID)
+					t.Fatalf("User with id %s not found", eu.ID)
 				}
 
 				if su.ID != eu.ID {
-					t.Fatalf("Selected user #%d: invalid ID: expected: %d, but got: %d", i, eu.ID, su.ID)
+					t.Fatalf("Selected user #%d: invalid ID: expected: %s, but got: %s", i, eu.ID, su.ID)
 				}
 				if su.Login != eu.Login {
 					t.Fatalf("Selected user #%d: invalid login: expected: %s, but got: %s", i, eu.Login, su.Login)
@@ -148,7 +149,7 @@ func TestStorageWorkExpressions(t *testing.T) {
 				{
 					ID: gofakeit.Uint32(),
 					Expression: types.Expression{
-						Data:   "2+2",
+						Data:   "2+2", // какие-то данные
 						Status: "OK",
 						Result: 4,
 					},
@@ -182,7 +183,7 @@ func TestStorageWorkExpressions(t *testing.T) {
 				{
 					ID: gofakeit.Uint32(),
 					Expression: types.Expression{
-						Data:   "2+2", // какие-то данные
+						Data:   "2+2",
 						Status: "OK",
 						Result: 4,
 					},
@@ -205,7 +206,7 @@ func TestStorageWorkExpressions(t *testing.T) {
 		},
 	}
 	testUser := &types.User{
-		ID:       gofakeit.Uint32(),
+		ID:       uuid.NewString(),
 		Login:    gofakeit.Username(),
 		Password: gofakeit.Password(true, true, true, false, false, 8),
 	}

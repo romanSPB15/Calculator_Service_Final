@@ -84,7 +84,7 @@ func wait(id uint32) (float64, types.Status) {
 		if resp.StatusCode != 200 {
 			fail("failed to get expression: status code: ", fmt.Errorf(resp.Status))
 		}
-		geResp := new(types.GetExpressionHandlerResult)
+		geResp := new(types.GetExpressionHandlerResponse)
 		json.NewDecoder(resp.Body).Decode(geResp)
 		resp.Body.Close()
 		if geResp.Expression.Status != consts.WaitStatus && geResp.Expression.Status != consts.CalculationStatus {

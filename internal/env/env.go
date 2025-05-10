@@ -18,6 +18,7 @@ type List struct {
 	HOST                    string
 	DEBUG                   bool
 	WEB                     bool
+	SECRETKEY               string
 }
 
 func NewList() *List {
@@ -82,6 +83,10 @@ func (e *List) InitEnv(file ...string) error {
 		return err
 	}
 	e.HOST, err = getStringEnv("HOST")
+	if err != nil {
+		return err
+	}
+	e.SECRETKEY, err = getStringEnv("SECRETKEY")
 	if err != nil {
 		return err
 	}

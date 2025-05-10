@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 	app "github.com/romanSPB15/Calculator_Service_Final/internal/application"
 	"github.com/romanSPB15/Calculator_Service_Final/internal/storage"
 	"github.com/romanSPB15/Calculator_Service_Final/pckg/consts"
@@ -27,19 +29,18 @@ var testClient = &http.Client{
 	Timeout: time.Second * 3,
 }
 
-// Регистрация. Возвращает токен и ошибку
-func Register(login, password string) (string, error) {
+// Регистрация. Возвращает ошибку
+func Register(login, password string) error {
 	resp, err := testClient.Post("http://localhost:8080/api/v1/register", "application/json", strings.NewReader(fmt.Sprintf(`{"login": "%s", "password": "%s"}`, login, password)))
 	if err != nil {
-		return "", err
+		return err
 	}
-
 	b, _ := io.ReadAll(resp.Body)
 	resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("status: %s, error: %s", resp.Status, string(b))
+		return fmt.Errorf("status: %s, error: %s", resp.Status, string(b))
 	}
-	return string(b), err
+	return nil
 }
 
 // Вход. Возвращает токен и ошибку
@@ -53,27 +54,53 @@ func Login(login, password string) (string, error) {
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("status: %s, error: %s", resp.Status, string(b))
 	}
-	return string(b), err
+	respStruct := types.LoginResponse{}
+	json.Unmarshal(b, &respStruct)
+	return respStruct.AccessToken, err
+}
+
+var sk string
+
+func init() {
+	godotenv.Load("../../config/.env")
+	var has bool
+	sk, has = os.LookupEnv("SECRETKEY")
+	if !has {
+		panic("SECRETKEY not found")
+	}
 }
 
 // Проверить токен
-func CheckToken(s, login, password string) error {
-	token, err := jwt.Parse(s, func(token *jwt.Token) (any, error) {
+func CheckToken(t, login, password string) error {
+	t2, err := Login(login, password)
+	if err != nil {
+		return err
+	}
+
+	token, err := jwt.Parse(t, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("invalid token")
 		}
-		return []byte(app.SECRETKEY), nil
+		return []byte(sk), nil
 	})
 	if err != nil {
-		return fmt.Errorf("parse error")
+		return fmt.Errorf("parse error t: %v", err)
 	}
-	login2 := token.Claims.(jwt.MapClaims)["login"].(string)
-	password2 := token.Claims.(jwt.MapClaims)["password"].(string)
-	if login2 != login {
+	id := token.Claims.(jwt.MapClaims)["id"].(types.UserID)
+
+	token2, err := jwt.Parse(t2, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("invalid token")
+		}
+		return []byte(sk), nil
+	})
+	if err != nil {
+		return fmt.Errorf("parse error two: %v", err)
+	}
+	id2 := token2.Claims.(jwt.MapClaims)["id"].(types.UserID)
+
+	if id != id2 {
 		return fmt.Errorf("invalid login in token")
-	}
-	if password2 != password {
-		return fmt.Errorf("invalid password in token")
 	}
 	return nil
 }
@@ -115,22 +142,16 @@ func TestRegisterAndLogin(t *testing.T) {
 	// Короткий пароль
 	login := "my_login"
 	password := "pswd"
-	_, err := Register(login, password)
+	err := Register(login, password)
 	if err == nil {
 		t.Fatal("expected error, but got: nil")
 	}
 
 	// Достаточно длинный - не меньше 5 символов
 	password = "good_password"
-	stringToken, err := Register(login, password)
+	err = Register(login, password)
 	if err != nil {
 		t.Fatalf("Expected no register error, but got: %v", err)
-	}
-
-	// Проверка токена
-	err = CheckToken(stringToken, login, password)
-	if err != nil {
-		t.Fatalf("Invalid register token: %v", err)
 	}
 
 	// Проверим вход
@@ -142,15 +163,15 @@ func TestRegisterAndLogin(t *testing.T) {
 	}
 
 	// Правильные данные
-	stringToken, err = Login(login, password)
+	token, err := Login(login, password)
 	if err != nil {
-		t.Fatalf("Expected no login error, but got: %v", err)
+		t.Fatalf("Expected no error, but got: %v", err)
 	}
 
 	// Проверка токена
-	err = CheckToken(stringToken, login, password)
+	err = CheckToken(token, login, password)
 	if err != nil {
-		t.Fatalf("Invalid login token: %v", err)
+		t.Fatalf("Invalid register token: %v", err)
 	}
 	stop()
 	clear()
@@ -164,14 +185,14 @@ func Calculate(expr, token string, t *testing.T) types.ExpressionID {
 	if err != nil {
 		t.Fatal("falied to make request: ", err)
 	}
-	req.Header.Set("Authorization-Bearer", token)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := testClient.Do(req)
 	if err != nil {
 		t.Fatal("Falied to send request: ", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 201 {
+	if resp.StatusCode != http.StatusCreated {
 		b, _ := io.ReadAll(resp.Body)
 		t.Fatalf("Falied to calculate: %s: %s", resp.Status, string(b))
 	}
@@ -190,7 +211,7 @@ func GetExpression(token string, id types.ExpressionID, t *testing.T) types.Expr
 	if err != nil {
 		t.Fatal("Falied to make request: ", err)
 	}
-	req.Header.Set("Authorization-Bearer", token)
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := testClient.Do(req)
 	if err != nil {
@@ -201,7 +222,7 @@ func GetExpression(token string, id types.ExpressionID, t *testing.T) types.Expr
 		b, _ := io.ReadAll(resp.Body)
 		t.Fatalf("Falied to get expression: %s: %s", resp.Status, string(b))
 	}
-	cResp := new(types.GetExpressionHandlerResult)
+	cResp := new(types.GetExpressionHandlerResponse)
 	err = json.NewDecoder(resp.Body).Decode(cResp)
 	if err != nil {
 		t.Fatalf("Falied to calculate: invalid response body: %v", err)
@@ -218,10 +239,15 @@ func TestWork(t *testing.T) {
 
 	login := "my_login"
 	password := "good_password"
-	token, err := Register(login, password)
+	err := Register(login, password)
 	if err != nil {
 		t.Fatalf("expected no register error, but got: %v", err)
 	}
+	token, err := Login(login, password)
+	if err != nil {
+		t.Fatalf("expected no login error, but got: %v", err)
+	}
+
 	testcases := []struct {
 		Name           string
 		Expr           string

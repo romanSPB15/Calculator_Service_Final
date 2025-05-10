@@ -6,10 +6,11 @@ import (
 )
 
 const (
-	InvalidBody       = "invalid body"
-	UserAlreadyExists = "user already exists"
-	ShortPassword     = "short password"
-	UserNotFound      = "user not found"
+	InvalidBody         = "invalid body"
+	UserAlreadyExists   = "user already exists"
+	ShortPassword       = "short password"
+	UserNotFound        = "user not found"
+	InternalServerError = "internal server error"
 )
 
 func ResponseError(resp *http.Response) string {

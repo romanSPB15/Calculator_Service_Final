@@ -31,7 +31,7 @@ func (st *Storage) createTables() error {
 	const (
 		usersTable = `
 	CREATE TABLE IF NOT EXISTS users(
-		id INTEGER PRIMARY KEY, 
+		id TEXT PRIMARY KEY, 
 		login TEXT,
 		password TEXT
 	);`
@@ -42,7 +42,7 @@ func (st *Storage) createTables() error {
 		data TEXT NOT NULL,
 		status TEXT NOT NULL,
 		result FLOAT,
-		user_id INTEGER NOT NULL
+		user_id TEXT NOT NULL
 	);`
 	)
 
