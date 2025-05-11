@@ -133,7 +133,14 @@ func login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if resp.StatusCode != http.StatusOK {
-			writeError(w, ruError(errors.ResponseError(resp)), resp.StatusCode, "")
+			cookie := &http.Cookie{
+				Name:     "token",
+				SameSite: http.SameSiteStrictMode,
+
+				MaxAge: -1,
+			}
+			http.SetCookie(w, cookie)
+			http.Redirect(w, r, "http://"+addr+"/api/v1/web/register", http.StatusSeeOther)
 			return
 		}
 		respStruct := new(types.LoginHandlerResponse)
@@ -187,12 +194,24 @@ func showID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
+
 	req.Header.Set("Authorization", "Bearer "+cookie.Value)
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		cookie := &http.Cookie{
+			Name:     "token",
+			SameSite: http.SameSiteStrictMode,
+
+			MaxAge: -1,
+		}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "http://"+addr+"/api/v1/web/login", http.StatusSeeOther)
+		return
+	}
 	var m map[string]uint32
 	err = json.NewDecoder(resp.Body).Decode(&m)
 	if err != nil {
@@ -218,8 +237,16 @@ func expressions(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	if resp.StatusCode != 200 {
-		writeError(w, errors.ResponseError(resp), 500, cookie.Value)
+	if resp.StatusCode != http.StatusOK {
+		cookie := &http.Cookie{
+			Name:     "token",
+			SameSite: http.SameSiteStrictMode,
+
+			MaxAge: -1,
+		}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "http://"+addr+"/api/v1/web/login", http.StatusSeeOther)
+		return
 	}
 	var res types.GetExpressionsHandlerResponse
 	defer resp.Body.Close()
@@ -246,6 +273,17 @@ func showExpression(w http.ResponseWriter, r *http.Request) {
 	resp, err := client.Do(req) // Делаем запрос
 	if err != nil {
 		panic(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		cookie := &http.Cookie{
+			Name:     "token",
+			SameSite: http.SameSiteStrictMode,
+
+			MaxAge: -1,
+		}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "http://"+addr+"/api/v1/web/login", http.StatusSeeOther)
+		return
 	}
 	var res types.GetExpressionHandlerResponse
 	defer resp.Body.Close()
@@ -281,7 +319,14 @@ func account(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		writeError(w, fmt.Sprintln("internal error", resp.Status, "-", errors.ResponseError(resp)), 500, cookie.Value)
+		cookie := &http.Cookie{
+			Name:     "token",
+			SameSite: http.SameSiteStrictMode,
+
+			MaxAge: -1,
+		}
+		http.SetCookie(w, cookie)
+		http.Redirect(w, r, "http://"+addr+"/api/v1/web/login", http.StatusSeeOther)
 		return
 	}
 	respStruct := new(types.AccountHandlerResponse)
