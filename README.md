@@ -2,7 +2,8 @@
 
 ## Описание
 
-Программа представляет собой API-сервис для конкурентного вычисления выражений с GRPC.
+Программа представляет собой API-сервис для конкурентного вычисления выражений.<br>
+Для связи агента(сервиса вычисляющего задачи как 2+8, 10-7) и оркестратора(разбивающий (2+8)-7 на задачи) используется GRPC на порту 8008.
 
 ## Предназначение
 
@@ -27,9 +28,7 @@ git clone https://github.com/romanSPB15/Calculator_Service_Final
  - В выбранной папке появится папка ```Calculator_Service_Final``` c проектом.
 
 ## Работа с API
-
-### Конфигурация
-#### Переменные среды
+### Переменные среды
 Сначала необходимо открыть файл ```./config/.env``` и установить параметры:
 
  - **TIME_ADDITION_MS** - время вычисления сложения(в миллисекундах);
@@ -42,15 +41,15 @@ git clone https://github.com/romanSPB15/Calculator_Service_Final
 
  - **COMPUTING_POWER** - максмальное количество *worker*'ов, которые параллельно выполняют арифметические действия.
 
-#### Другие параметры
+ - **HOST** - хост сервера(по умолчанию localhost)
 
-Потом необходимо открыть файл ```.json``` в той же папке и установить следущие параметры(**true** - включено, **false** - выключено):
+ - **PORT** - порт сервера(по умолчанию 8080)
 
- - ```debug``` - отладка(вывод событий в лог)
+    - **ВАЖНО** - Порт не должен быть равен 8008 - на нём работает GRPC сервер!
 
- - ```front``` - веб-интерфейс(об его использовании читайте дальше в **Веб-интерфейс**) // Пока НЕ работает
+ - **DEBUG** - отладка(вывод событий в лог)
 
-По умолчанию и то и другое выключено.
+ - **WEB** - веб-интерфейс(об его использовании читайте дальше в **Веб-интерфейс**), по умолчанию включен
 
 ### Запуск
  - Для запуска API необходимо выбрать директорию проекта:
@@ -64,28 +63,8 @@ go run cmd/main.go
 
 ### Управление
 
-Для работы через терминал на *Curl* настоятельно рекомендую использовать **Git Bash**.<br> Но можно использовать и **Postman** - приложение для отправки *HTTP-запросов*, по-моему в нём работать проще.
+Для работы через терминал на **Curl** настоятельно рекомендую использовать **Git Bash**.<br> Но можно использовать и **Postman** - приложение для отправки *HTTP-запросов*, по-моему в нём работать проще.
 
-
-#### Регистрация и вход, передача токена
-Пользователь отправляет запрос 
-```
-POST /api/v1/register { "login": <my_login>, "password": <my_password>}
-```
-
-В ответ получаем 200+OK (в случае успеха)
-
-В противном случае - ошибка
-
-Добавляем вход
-
-Пользователь отправляет запрос
-```
-POST /api/v1/login { "login": <my_login>, "password": <my_password>}
-```
-
-В ответ получаем 200+OK и JWT токен для последующей авторизации
-   - **JWT-Токен** *протухает* **за сутки**.
 
 #### Тесты
 Для запуска тестов нужно выполнить такую команду:
@@ -93,48 +72,108 @@ POST /api/v1/login { "login": <my_login>, "password": <my_password>}
 go test ./internal/application
 ```
 
- #### Регистрация
+#### Регистрация и вход
+##### Регистрация
 
-Пользователь отправляет запрос **POST** ```/api/v1/register```
+###### Curl
+- Здесь и далее предполагается, что **HOST**=localhost, а **PORT**=8080 - по умолчанию
 ```
-{ "login": "mylogin", "password": "mypassword"}
+curl --location 'http://localhost:8080/api/v1/register' \ // 
+--header 'Content-Type: application/json' \
+--data '{
+  "login": <логин>,
+  "password": <пароль>,
+}'
+```
+
+###### Postman
+
+ - **URL** http://localhost:8080/api/v1/register;
+ - Запрос **POST**;
+ - **Body** **RAW** { "login": <логин>, "password": <пароль>};
+ - Нажать на ****SEND****.
+
+--------------------------------------------------
+
+###### Как работает
+
+Пользователь отправляет запрос **POST** на ```/api/v1/register``` с телом:
+```
+{ "login": <логин>, "password": <пароль>}
 ```
 
 В ответ получает 200 OK (в случае успеха), а 422 в случае ошибки:
 
-- **Неправильный метод**(должен быть **только POST**): ```method not allowed```.
-- **Неправильное тело запроса**: ```invalid body```.
-- **Такой пользователь уже существует** ```user already exists```.
-- **Короткий пароль** (меньше **5 символов**): ```short password```.
+- **Неправильный метод**(должен быть только **POST**): ```method not allowed```.
+- **Неправильное тело запроса:** ```invalid body```.
+- **Такой пользователь уже существует:** ```user already exists```.
+- **Короткий пароль** (меньше *5 символов*): ```short password```.
 
+Ошибка будет в теле ответа.
 
-#### Вход
+##### Вход
 
-Пользователь отправляет запрос **POST** ```/api/v1/login```
+###### Curl
 ```
-{ "login": , "password": }
+curl --location 'http://localhost:8080/api/v1/login' \
+--header 'Content-Type: application/json' \
+--data '{
+  "login": <логин>,
+  "password": <пароль>,
+}'
+```
+
+###### Postman
+
+ - **URL** http://localhost:8080/api/v1/login;
+ - Запрос **POST**;
+ - **Body** **RAW** { "login": <логин>, "password": <пароль>};
+ - Нажать на ****SEND****.
+
+-------------------------------------------------------------
+
+###### Как работает
+
+
+Пользователь отправляет запрос **POST** на ```/api/v1/login``` с телом:
+```
+{ "login": <логин>, "password":<пароль> }
+```
+- Тело ответа:
+```
+{"access_token": <токен>}
 ```
 
 В ответ получает 200 OK и **JWT-токен для последующей авторизации**, а 422 в случае ошибки.
 
 - **Неправильный метод**(должен быть **только POST**): ```method not allowed```
-- **Неправильное тело запроса**: ```invalid body```
-- **Невалидное имя или пароль:** ```invalid login or password```
+- **Неправильное тело запроса:** ```invalid body```
+- **Пользователь не найден:** ```invalid login or password```
 
- #### Добавление вычисления арифметического выражения
+Ошибка будет в теле ответа.
 
-Добавление выражения для вычисления на **API**.
+
+---------------------------------------------------------------------
+Для всех операций, кроме **login** и **register**, нуже заголовок заголовок Authorization:
+```
+Authorization: Bearer <полученный при login токен>
+```
+
+
+ #### Добавление арифметического выражения для вычисления
+
+Добавление выражения для вычисления в **API**.
 
 ##### Curl
 ```
-curl --location 'localhost/api/v1/calculate' \
+curl --location 'http://localhost:8080/api/v1/calculate' \
 --header 'Content-Type: application/json' \
 --data '{
   "expression": <выражение>
 }'
 ```
 ##### Postman
- - **URL** localhost/api/v1/calculate;
+ - **URL** http://localhost:8080/api/v1/calculate;
  - Запрос **POST**;
  - **Body** **RAW** {"expression": <выражение>};
  - Нажать на ****SEND****.
@@ -154,10 +193,10 @@ curl --location 'localhost/api/v1/calculate' \
 #### Получение списка выражений
 ##### Curl
 ```
-curl --location 'localhost/api/v1/expressions'
+curl --location 'http://localhost:8080/api/v1/expressions'
 ```
 ##### Postman
- - **URL** localhost/api/v1/expressions;
+ - **URL** http://localhost:8080/api/v1/expressions;
  - Запрос **GET**;
  - **Body** **NONE**;
  - Нажать на ****SEND****.
@@ -177,7 +216,7 @@ curl --location 'localhost/api/v1/expressions'
         },
         
             "id": 5372342,
-            "status": "Calculation",  // готово
+            "status": "Calculation",  // в процессе
             "result": 3
             "error": ""
         },
@@ -209,11 +248,11 @@ curl --location 'localhost/api/v1/expressions'
 ##### Curl
 
 ```
-curl --location 'localhost/api/v1/expressions/<id выражения>'
+curl --location 'http://localhost:8080/api/v1/expressions/<id выражения>'
 ```
 
 ##### Postman:
- - **URL** localhost/api/v1/expressions/<id выражения>;
+ - **URL** http://localhost:8080/api/v1/expressions/<id выражения>;
  - Запрос **GET**;
  - Тело **NONE**;
  - Нажать на ****SEND****.
@@ -240,18 +279,62 @@ curl --location 'localhost/api/v1/expressions/<id выражения>'
 
 ### Простой пример
 
+#### Делаем запрос на регистрацию
+
+##### Curl
+
+```
+curl --location 'http://localhost:8080/api/v1/register' \ // 
+--header 'Content-Type: application/json' \
+--data '{
+  "login": user0,
+  "password": user0_password,
+}'
+```
+
+##### Postman
+
+ - **URL** localhost:8080/api/v1/register;
+ - Запрос **POST**;
+ - **Body** **RAW** ```{"login": user0,"password": user0_password}```;
+ - Нажать на ****SEND****.
+
+#### Делаем запрос на вxод
+
+##### Curl
+
+```
+curl --location 'http://localhost:8080/api/v1/login' \ // 
+--header 'Content-Type: application/json' \
+--data '{
+  "login": user0,
+  "password": user0_password,
+}'
+```
+
+##### Postman
+
+ - **URL** localhost:8080/api/v1/login;
+ - Запрос **POST**;
+ - **Body** **RAW** ```{"login": user0,"password": user0_password}```;
+ - Нажать на ****SEND****.
+
+--------------------------------------------------------
+
+- Считываем из тела ответа токен.
+
 #### Делаем запрос на вычисление выражения
 
 ##### Curl
 ```
-curl --location 'localhost/api/v1/calculate' \
+curl --location 'localhost:8080/api/v1/calculate' \
 --header 'Content-Type: application/json' \
 --data '{
   "expression": "2+2/2"
 }'
 ```
 ##### Postman
- - **URL** localhost/api/v1/calculate;
+ - **URL** localhost:8080/api/v1/calculate;
  - Запрос **POST**;
  - **Body** **RAW** {"expression": "2+2/2"};
  - Нажать на ****SEND****.
@@ -267,10 +350,10 @@ curl --location 'localhost/api/v1/calculate' \
 #### Получаем наше выражение
 ##### Curl
 ```
-curl --location 'localhost/api/v1/expressions/12345' // 12345 - это ID выше.
+curl --location 'localhost:8080/api/v1/expressions/12345'
 ```
 ##### Postman
- - **URL** localhost/api/v1/expressions/12345;
+ - **URL** localhost:8080/api/v1/expressions/12345;
  - Запрос **GET**;
  - Тело **NONE**;
  - Нажать на ****SEND****
@@ -291,10 +374,11 @@ curl --location 'localhost/api/v1/expressions/12345' // 12345 - это ID выш
 #### Получаем все выражения
 ##### Curl
 ```
-curl --location 'localhost/api/v1/expressions'
+curl --location 'http://localhost:8080/api/v1/expressions'
+--header 'Authorization: <токен>'
 ```
 ##### Postman
- - **URL** localhost/api/v1/expressions;
+ - **URL** http://localhost:8080/api/v1/expressions;
  - Запрос **GET**;
  - **Body** **NONE**;
  - Нажать на ****SEND****.
@@ -320,15 +404,15 @@ curl --location 'localhost/api/v1/expressions'
 ##### Curl
 
 ```
-curl --location 'localhost/api/v1/calculate' \
---header 'Content-Type: application/json' \
+curl --location 'http://localhost:8080/api/v1/calculate' \
+--header 'Content-Type: application/json, Authorization: <токен>' \
 --data '{
   "radhgsags": "2+2/2"
 }'
 ```
 
 ##### Postman
- - **URL** localhost/api/v1/calculate;
+ - **URL** http://localhost:8080/api/v1/calculate;
  - Запрос **POST**;
  - **Body** **RAW** {"radhgsags": "2+2/2"};
  - Нажать на ****SEND****.
@@ -343,18 +427,18 @@ curl --location 'localhost/api/v1/calculate' \
 
 ##### Curl
 ```
-curl --location 'localhost/api/v1/calculate' \
---header 'Content-Type: application/json' \
+curl --location 'http://localhost:8080/api/v1/calculate' \
+--header 'Content-Type: application/json, Authorization: <токен>' \
 --data '{
-  "expression": "2+2/2"
+  "adbsafde": "2+2/2"
 }'
 ```
 
 
 ##### Postman
- - **URL** localhost/api/v1/calculate;
+ - **URL** http://localhost:8080/api/v1/calculate;
  - Запрос **POST**;
- - **Body** **RAW** {"radhgsags": "2+2/2"};
+ - **Body** **RAW** {"adbsafde": "2+2/2"};
  - Нажать на ****SEND****.
 
 ##### Ответ
@@ -367,11 +451,11 @@ curl --location 'localhost/api/v1/calculate' \
 #### Далее получаем наше выражение(**неправильный** ID)
 ##### Curl
 ```
-curl --location 'localhost/api/v1/expressions/45362'
+curl --location 'localhost:8080/api/v1/expressions/45362'
 ```
 
 ##### Postman:
- - **URL** localhost/api/v1/expressions/45362;
+ - **URL** localhost:8080/api/v1/expressions/45362;
  - Запрос **GET**;
  - Тело **NONE**;
  - Нажать на ****SEND****.
@@ -386,14 +470,14 @@ curl --location 'localhost/api/v1/expressions/45362'
 
 ##### Curl
 ```
-curl --location 'localhost/api/v1/abc' \
---header 'Content-Type: application/json' \
+curl --location 'localhost:8080/api/v1/abc' \
+--header 'Content-Type: application/json, Authorization: <токен>' \
 --data '{
   "expression": "121+2"
 }'
 ```
 ##### Postman
- - **URL** localhost/api/v1/abc;
+ - **URL** localhost:8080/api/v1/abc;
  - Запрос **POST**;
  - **Body** **RAW** {"expression": "121+2"};
  - Нажать на ****SEND****.
@@ -401,9 +485,55 @@ curl --location 'localhost/api/v1/abc' \
 ##### Ответ
 Статус 404(**NOT FOUND**);
 
+### Пример с ошибкой в запросе №4
+
+#### Register
+
+##### Curl
+```
+curl --location 'localhost:8080/api/v1/register' \
+--header 'Content-Type: application/json' \
+--data '{
+  "abc": "def"
+}'
+```
+
+##### Postman
+ - **URL** localhost:8080/api/v1/register;
+ - Запрос **POST**;
+ - **Body** **RAW** { "abc": "def"};
+ - Нажать на ****SEND****.
+
+##### Ответ
+```
+invalid body
+```
+
+#### Login
+
+##### Curl
+```
+curl --location 'localhost:8080/api/v1/login' \
+--header 'Content-Type: application/json' \
+--data '{
+  "abc": "def"
+}'
+```
+
+##### Postman
+ - **URL** localhost:8080/api/v1/login;
+ - Запрос **POST**;
+ - **Body** **RAW** { "abc": "def"};
+ - Нажать на ****SEND****.
+
+##### Ответ
+```
+invalid body
+```
+
 ### Веб-интерфейс
 
 
- - [Главная страница](http://localhost:8080/api/v1/front)
+ - [Главная страница](http://localhost:8080/api/v1/web).
 
-****ВАЖНО:**** По умолчанию веб-интерфейс выключен. Чтобы его включить, нужно изменить параметр *Веб интерфейс* в **Конфигурация/Другие Параметры**.
+ - Использует cookies.
