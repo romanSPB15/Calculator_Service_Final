@@ -128,7 +128,8 @@ func (a *Application) AddUser(login, password string) (types.UserID, error) {
 	return u.ID, nil
 }
 
-const GRPC_PORT = 8081
+// Порт, на котором работает GRPC сервер
+const GRPC_PORT = 8008
 
 func envFile(testFlag bool) string {
 	if testFlag {
@@ -137,6 +138,7 @@ func envFile(testFlag bool) string {
 	return "config/.env"
 }
 
+// Инициализирует приложение, возвращаеи ошибку
 func (app *Application) Init(test ...bool) error {
 	var err error
 	path := consts.AppStoragePath
