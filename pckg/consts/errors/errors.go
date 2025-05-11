@@ -11,6 +11,8 @@ const (
 	ShortPassword       = "short password"
 	UserNotFound        = "user not found"
 	InternalServerError = "internal server error"
+	InvalidHeader       = "invalid header"
+	InvalidToken        = "invalid token"
 )
 
 func ResponseError(resp *http.Response) string {

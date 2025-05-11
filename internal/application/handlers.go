@@ -20,11 +20,11 @@ func (a *Application) GetUserByRequest(req *http.Request) (*types.User, string, 
 	str := req.Header.Get("Authorization")
 
 	if str == "" {
-		return nil, "invalid header", http.StatusUnprocessableEntity
+		return nil, errors.InvalidHeader, http.StatusUnprocessableEntity
 	}
 	str, has := strings.CutPrefix(str, "Bearer ")
 	if !has {
-		return nil, "invalid header: prefix 'Bearer' not found", http.StatusUnprocessableEntity
+		return nil, errors.InvalidHeader, http.StatusUnprocessableEntity
 	}
 	token, err := jwt.Parse(str, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -33,7 +33,7 @@ func (a *Application) GetUserByRequest(req *http.Request) (*types.User, string, 
 		return []byte(a.env.SECRETKEY), nil
 	})
 	if err != nil {
-		return nil, "invalid token " + err.Error(), http.StatusUnprocessableEntity
+		return nil, errors.InvalidToken, http.StatusUnprocessableEntity
 	}
 	id := token.Claims.(jwt.MapClaims)["id"].(string)
 	u, ok := a.GetUserByID(id)

@@ -17,7 +17,7 @@
 
 ## Установка
 
- - Для установки нужно выбрать директорию проекта:
+ - Для установки нужно выбрать директорию, где будет проект проекта:
 ```bash
 cd <your_dir>
 ```
@@ -49,7 +49,7 @@ git clone https://github.com/romanSPB15/Calculator_Service_Final
 
  - **DEBUG** - отладка(вывод событий в лог)
 
- - **WEB** - веб-интерфейс(об его использовании читайте дальше в **Веб-интерфейс**), по умолчанию включен
+ - **WEB** - включение веб-интерфейса, по умолчанию включен
 
 ### Запуск
  - Для запуска API необходимо выбрать директорию проекта:
@@ -159,6 +159,8 @@ curl --location 'http://localhost:8080/api/v1/login' \
 Authorization: Bearer <полученный при login токен>
 ```
 
+ - Если заголовок не найден, или отсутствует слово Bearer, то возвращает ошибку ```invalid header```.
+ - Если заголовок токен неправильный, то возвращает ошибку ```invalid token```.
 
  #### Добавление арифметического выражения для вычисления
 
@@ -284,17 +286,17 @@ curl --location 'http://localhost:8080/api/v1/expressions/<id выражения
 ##### Curl
 
 ```
-curl --location 'http://localhost:8080/api/v1/register' \ // 
+curl --location 'http://localhost:8080/api/v1/register' \
 --header 'Content-Type: application/json' \
 --data '{
-  "login": user0,
-  "password": user0_password,
+  "login": "user0",
+  "password": "user0_password"
 }'
 ```
 
 ##### Postman
 
- - **URL** localhost:8080/api/v1/register;
+ - **URL** http://localhost:8080/api/v1/register;
  - Запрос **POST**;
  - **Body** **RAW** ```{"login": user0,"password": user0_password}```;
  - Нажать на ****SEND****.
@@ -307,8 +309,8 @@ curl --location 'http://localhost:8080/api/v1/register' \ //
 curl --location 'http://localhost:8080/api/v1/login' \ // 
 --header 'Content-Type: application/json' \
 --data '{
-  "login": user0,
-  "password": user0_password,
+  "login": "user0",
+  "password": "user0_password"
 }'
 ```
 
@@ -327,15 +329,16 @@ curl --location 'http://localhost:8080/api/v1/login' \ //
 
 ##### Curl
 ```
-curl --location 'localhost:8080/api/v1/calculate' \
---header 'Content-Type: application/json' \
+curl --location 'http://localhost:8080/api/v1/calculate' \
+--header 'Content-Type: application/json' --header 'Authorization: Bearer <токен>' \
 --data '{
   "expression": "2+2/2"
 }'
 ```
 ##### Postman
- - **URL** localhost:8080/api/v1/calculate;
+ - **URL** http://localhost:8080/api/v1/calculate;
  - Запрос **POST**;
+ - Header **Authorization** установить в "Bearer <токен>"
  - **Body** **RAW** {"expression": "2+2/2"};
  - Нажать на ****SEND****.
 
@@ -355,6 +358,7 @@ curl --location 'localhost:8080/api/v1/expressions/12345'
 ##### Postman
  - **URL** localhost:8080/api/v1/expressions/12345;
  - Запрос **GET**;
+ - Header **Authorization** установить в "Bearer <токен>"
  - Тело **NONE**;
  - Нажать на ****SEND****
 
@@ -375,11 +379,12 @@ curl --location 'localhost:8080/api/v1/expressions/12345'
 ##### Curl
 ```
 curl --location 'http://localhost:8080/api/v1/expressions'
---header 'Authorization: <токен>'
+--header 'Authorization: Bearer <токен>'
 ```
 ##### Postman
  - **URL** http://localhost:8080/api/v1/expressions;
  - Запрос **GET**;
+ - Header **Authorization** установить в "Bearer <токен>"
  - **Body** **NONE**;
  - Нажать на ****SEND****.
 
@@ -405,7 +410,7 @@ curl --location 'http://localhost:8080/api/v1/expressions'
 
 ```
 curl --location 'http://localhost:8080/api/v1/calculate' \
---header 'Content-Type: application/json, Authorization: <токен>' \
+--header 'Content-Type: application/json' --header 'Authorization: Bearer <токен>' \
 --data '{
   "radhgsags": "2+2/2"
 }'
@@ -414,6 +419,7 @@ curl --location 'http://localhost:8080/api/v1/calculate' \
 ##### Postman
  - **URL** http://localhost:8080/api/v1/calculate;
  - Запрос **POST**;
+ - Header **Authorization** установить в "Bearer <токен>"
  - **Body** **RAW** {"radhgsags": "2+2/2"};
  - Нажать на ****SEND****.
 
@@ -428,9 +434,9 @@ curl --location 'http://localhost:8080/api/v1/calculate' \
 ##### Curl
 ```
 curl --location 'http://localhost:8080/api/v1/calculate' \
---header 'Content-Type: application/json, Authorization: <токен>' \
+--header 'Content-Type: application/json' --header 'Authorization: Bearer <токен>' \
 --data '{
-  "adbsafde": "2+2/2"
+  "expression": "2+2/2"
 }'
 ```
 
@@ -438,7 +444,8 @@ curl --location 'http://localhost:8080/api/v1/calculate' \
 ##### Postman
  - **URL** http://localhost:8080/api/v1/calculate;
  - Запрос **POST**;
- - **Body** **RAW** {"adbsafde": "2+2/2"};
+ - Header **Authorization** установить в "Bearer <токен>"
+ - **Body** **RAW** {"expression": "2+2/2"};
  - Нажать на ****SEND****.
 
 ##### Ответ
@@ -451,12 +458,13 @@ curl --location 'http://localhost:8080/api/v1/calculate' \
 #### Далее получаем наше выражение(**неправильный** ID)
 ##### Curl
 ```
-curl --location 'localhost:8080/api/v1/expressions/45362'
+curl --location 'http://localhost:8080/api/v1/expressions/45362'
 ```
 
 ##### Postman:
- - **URL** localhost:8080/api/v1/expressions/45362;
+ - **URL** http://localhost:8080/api/v1/expressions/45362;
  - Запрос **GET**;
+ - Header **Authorization** установить в "Bearer <токен>"
  - Тело **NONE**;
  - Нажать на ****SEND****.
 
@@ -470,15 +478,16 @@ curl --location 'localhost:8080/api/v1/expressions/45362'
 
 ##### Curl
 ```
-curl --location 'localhost:8080/api/v1/abc' \
---header 'Content-Type: application/json, Authorization: <токен>' \
+curl --location 'http://localhost:8080/api/v1/abc' \
+--header 'Content-Type: application/json' --header 'Authorization: Bearer <токен>' \
 --data '{
   "expression": "121+2"
 }'
 ```
 ##### Postman
- - **URL** localhost:8080/api/v1/abc;
+ - **URL** http://localhost:8080/api/v1/abc;
  - Запрос **POST**;
+ - Header **Authorization** установить в "Bearer <токен>"
  - **Body** **RAW** {"expression": "121+2"};
  - Нажать на ****SEND****.
 
@@ -491,7 +500,7 @@ curl --location 'localhost:8080/api/v1/abc' \
 
 ##### Curl
 ```
-curl --location 'localhost:8080/api/v1/register' \
+curl --location 'http://localhost:8080/api/v1/register' \
 --header 'Content-Type: application/json' \
 --data '{
   "abc": "def"
@@ -499,7 +508,7 @@ curl --location 'localhost:8080/api/v1/register' \
 ```
 
 ##### Postman
- - **URL** localhost:8080/api/v1/register;
+ - **URL** http://localhost:8080/api/v1/register;
  - Запрос **POST**;
  - **Body** **RAW** { "abc": "def"};
  - Нажать на ****SEND****.
@@ -513,7 +522,7 @@ invalid body
 
 ##### Curl
 ```
-curl --location 'localhost:8080/api/v1/login' \
+curl --location 'http://localhost:8080/api/v1/login' \
 --header 'Content-Type: application/json' \
 --data '{
   "abc": "def"
@@ -521,7 +530,7 @@ curl --location 'localhost:8080/api/v1/login' \
 ```
 
 ##### Postman
- - **URL** localhost:8080/api/v1/login;
+ - **URL** http://localhost:8080/api/v1/login;
  - Запрос **POST**;
  - **Body** **RAW** { "abc": "def"};
  - Нажать на ****SEND****.
